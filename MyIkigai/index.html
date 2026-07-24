@@ -1571,6 +1571,9 @@ const KPI_CATALOG = {
 const DEFAULT_KPI_SELECTION = ["monthlyPriorities","ortoWater","ortoFertilize","netWorth"];
 const APP_VERSION = "v0.67";
 const ADMIN_EMAIL = "antonio.calamo@gmail.com";
+// Unico punto in cui si decide chi è admin: da qui in poi ogni "potere speciale" riservato
+// all'admin va controllato con isAdmin(), non ripetendo il confronto con ADMIN_EMAIL in giro.
+function isAdmin(){ return !!currentUser && currentUser.email === ADMIN_EMAIL; }
 const USER_NAMES = { "antonio.calamo@gmail.com":"Antonio", "cristinacuna90@gmail.com":"Cri" };
 function getGreeting(){
   const h = new Date().getHours();
@@ -2981,6 +2984,21 @@ function openAccountSettingsModal(){
     notifyLabel.appendChild(document.createTextNode("Voglio ricevere un'email il 27 di ogni mese per ricordarmi di aggiornare la scheda Finanze"));
     modal.appendChild(notifyLabel);
 
+    if(isAdmin()){
+      modal.appendChild(el("div",{class:"field-label", style:"margin-top:18px;"},"Amministrazione (solo per te)"));
+      const adminBox = el("div",{style:"font-size:12px; color:var(--ink-soft); line-height:1.6; background:var(--paper-2); border-radius:10px; padding:10px 12px;"});
+      adminBox.appendChild(el("div",{}, "Utenti, accessi, reset password e log si gestiscono dalla dashboard Supabase del progetto:"));
+      const linkList = el("div",{style:"margin-top:6px; display:flex; flex-direction:column; gap:4px;"});
+      const usersLink = el("a",{href:"https://supabase.com/dashboard/project/ojucknfxtbcjqvjhqljc/auth/users", target:"_blank", rel:"noopener", style:"color:var(--forest); font-weight:600;"}, "→ Authentication · Users");
+      linkList.appendChild(usersLink);
+      linkList.appendChild(el("div",{style:"font-size:11px;"}, "elenco utenti, ultimo accesso, invia reset password o disabilita un account (icona ⋮ sulla riga dell'utente)."));
+      const logsLink = el("a",{href:"https://supabase.com/dashboard/project/ojucknfxtbcjqvjhqljc/logs/explorer", target:"_blank", rel:"noopener", style:"color:var(--forest); font-weight:600; margin-top:6px; display:block;"}, "→ Logs Explorer");
+      linkList.appendChild(logsLink);
+      linkList.appendChild(el("div",{style:"font-size:11px;"}, "log di autenticazione e delle chiamate API (filtra per \"auth\" in alto)."));
+      adminBox.appendChild(linkList);
+      modal.appendChild(adminBox);
+    }
+
     const actions = el("div",{class:"modal-actions"});
     const closeBtn = el("button",{class:"btn primary"},"Chiudi");
     closeBtn.addEventListener("click", close);
@@ -3185,7 +3203,7 @@ function renderDashboard(main){
   const titleRow = el("div",{class:"section-head"});
   const titleWrap = el("div",{class:"dash-title-wrap"});
   titleWrap.appendChild(el("h1",{}, currentDashTitle));
-  if(currentUser.email === ADMIN_EMAIL){
+  if(isAdmin()){
     const editTitle = el("span",{class:"box-edit-icon", html:ICON_EDIT, title:"Modifica titoli"});
     editTitle.addEventListener("click", openDashTitlesModal);
     titleWrap.appendChild(editTitle);
@@ -3194,7 +3212,7 @@ function renderDashboard(main){
   headerWrap.appendChild(titleRow);
   const subRow = el("div",{class:"dash-subtitle"});
   subRow.appendChild(el("span",{}, currentTagline));
-  if(currentUser.email === ADMIN_EMAIL){
+  if(isAdmin()){
     const editT = el("span",{class:"box-edit-icon", html:ICON_EDIT, title:"Modifica sottotitoli"});
     editT.addEventListener("click", openTaglinesModal);
     subRow.appendChild(editT);

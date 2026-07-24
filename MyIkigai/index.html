@@ -1954,6 +1954,29 @@ function privKey(name){ return "priv:"+currentUser.id+":"+name; }
 function gcalHasValidToken(){
   return !!gcalAccessToken && Date.now() < gcalTokenExpiresAt;
 }
+// Il token resta comunque di breve durata (~1h) e di sola lettura, ma tenerlo nella
+// sessionStorage (vive solo in questa scheda del browser, sparisce quando la chiudi — diversa
+// dai dati veri, che restano su Supabase) evita di dover rifare il giro con Google ad ogni
+// refresh della pagina: lo si rifà solo quando il token è scaduto per davvero.
+function gcalSessionKey(){ return "gcal_token:" + (currentUser ? currentUser.id : ""); }
+function saveGcalTokenToSession(){
+  try{ sessionStorage.setItem(gcalSessionKey(), JSON.stringify({token:gcalAccessToken, exp:gcalTokenExpiresAt})); }catch(e){}
+}
+function loadGcalTokenFromSession(){
+  try{
+    const raw = sessionStorage.getItem(gcalSessionKey());
+    if(!raw) return false;
+    const cached = JSON.parse(raw);
+    if(cached && cached.token && cached.exp > Date.now()){
+      gcalAccessToken = cached.token; gcalTokenExpiresAt = cached.exp;
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+function clearGcalSessionToken(){
+  try{ sessionStorage.removeItem(gcalSessionKey()); }catch(e){}
+}
 // Crea (una sola volta) il "token client" di Google Identity Services: è l'oggetto che sa
 // come aprire il popup di consenso di Google e restituirci un access token.
 function ensureGcalTokenClient(){
@@ -1965,6 +1988,7 @@ function ensureGcalTokenClient(){
       if(resp.error){
         console.error("Google Calendar auth error", resp);
         gcalAccessToken = null; gcalTokenExpiresAt = 0;
+        clearGcalSessionToken();
         if(resp.error !== "immediate_failed"){ // "immediate_failed" = solo il tentativo silenzioso non è riuscito, non è un rifiuto esplicito
           alert("Accesso a Google Calendar non riuscito o negato. Puoi riprovare quando vuoi con \"Connetti Google Calendar\".");
         }
@@ -1973,6 +1997,7 @@ function ensureGcalTokenClient(){
       }
       gcalAccessToken = resp.access_token;
       gcalTokenExpiresAt = Date.now() + (Number(resp.expires_in||3600) * 1000) - 60000; // 1 min di margine
+      saveGcalTokenToSession();
       const wasConnected = state.googleCalendar && state.googleCalendar.connected;
       state.googleCalendar = { connected:true, email: currentUser.email };
       if(!wasConnected) store.set(privKey("googleCalendar"), state.googleCalendar);
@@ -1988,22 +2013,25 @@ function connectGoogleCalendar(){
   if(!client){ alert("La libreria di accesso Google non si è ancora caricata, riprova tra un istante."); return; }
   client.requestAccessToken({ prompt: "consent" });
 }
-// Tentativo "silenzioso" (nessun popup) all'avvio, se l'utente risultava già connesso in
-// precedenza: funziona solo se la sessione Google del browser è ancora attiva e il consenso
-// è già stato dato in passato; altrimenti fallisce senza disturbare l'utente (nessun alert).
+// Tentativo "silenzioso" (nessun popup, salvo il breve lampeggio impostato da Google stesso)
+// all'avvio, se l'utente risultava già connesso in precedenza. Prima di tutto controlla se
+// abbiamo già un token buono in sessionStorage da un refresh precedente nella stessa scheda:
+// se c'è, evita del tutto la chiamata a Google.
 function attemptSilentGcalReauth(){
   if(gcalSilentAttempted) return;
   gcalSilentAttempted = true;
   if(!state.googleCalendar || !state.googleCalendar.connected) return;
+  if(loadGcalTokenFromSession()){ render(currentRenderedTab); return; }
   const client = ensureGcalTokenClient();
   if(!client) return;
   client.requestAccessToken({ prompt: "none" });
 }
-// Scollega: dimentica il token in memoria e lo stato salvato. Non revoca il permesso lato
-// Google (l'utente può farlo da myaccount.google.com se vuole); qui semplicemente l'app
-// smette di usarlo, in modo pulito.
+// Scollega: dimentica il token in memoria, in sessionStorage e lo stato salvato. Non revoca
+// il permesso lato Google (l'utente può farlo da myaccount.google.com se vuole); qui
+// semplicemente l'app smette di usarlo, in modo pulito.
 function disconnectGoogleCalendar(){
   gcalAccessToken = null; gcalTokenExpiresAt = 0;
+  clearGcalSessionToken();
   state.googleCalendar = { connected:false, email:null };
   store.set(privKey("googleCalendar"), state.googleCalendar);
   render(currentRenderedTab);

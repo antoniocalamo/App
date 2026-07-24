@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{
   --paper:#F9EDE0;
@@ -1176,6 +1177,7 @@ table.tires textarea.gomme-cell{
 
 /* ---- To Do List header actions / today highlight ---- */
 .todo-header-actions{display:flex; align-items:center; gap:16px; flex-wrap:wrap; text-transform:none; letter-spacing:normal; font-family:'Inter',sans-serif;}
+.gcal-status-wrap{display:flex; align-items:center; gap:6px;}
 .toggle-completed{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--ink-soft); cursor:pointer;}
 .toggle-completed input{accent-color:var(--forest); width:15px; height:15px;}
 .day-row.today .day-label{
@@ -1575,6 +1577,17 @@ const ADMIN_EMAIL = "antonio.calamo@gmail.com";
 // all'admin va controllato con isAdmin(), non ripetendo il confronto con ADMIN_EMAIL in giro.
 function isAdmin(){ return !!currentUser && currentUser.email === ADMIN_EMAIL; }
 const USER_NAMES = { "antonio.calamo@gmail.com":"Antonio", "cristinacuna90@gmail.com":"Cri" };
+// Integrazione Google Calendar (sola lettura). Il Client ID NON è un segreto (è pensato per
+// stare nel codice pubblico); qui non c'è né deve mai esserci un client secret, perché usiamo
+// il flusso "a token" di Google Identity Services (GIS), pensato apposta per siti statici senza backend.
+const GOOGLE_CLIENT_ID = "574479291815-4debdlr1ccio8g9bnbrgl991eqaahmi4.apps.googleusercontent.com";
+const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
+// Stato in memoria (mai su Supabase): il token di accesso dura ~1h e Google non rilascia un
+// refresh token ai siti pubblici come il nostro, quindi va richiesto di nuovo quando scade.
+let gcalTokenClient = null;
+let gcalAccessToken = null;
+let gcalTokenExpiresAt = 0; // timestamp ms
+let gcalSilentAttempted = false;
 function getGreeting(){
   const h = new Date().getHours();
   if(h>=6 && h<13) return "Buongiorno";
@@ -1805,7 +1818,7 @@ const store = {
   }
 };
 
-let state = { dashboard:null, orto:null, trips:null, bbqs:null, tires:null, finance:null, sharedBoards:null, customTabs:null, customTabsPrivate:null, hiddenBuiltins:null, taglines:null, dashTitles:null, gommeLayout:null, builtinLabels:null, accountSettings:null, maintenanceItems:null };
+let state = { dashboard:null, orto:null, trips:null, bbqs:null, tires:null, finance:null, sharedBoards:null, customTabs:null, customTabsPrivate:null, hiddenBuiltins:null, taglines:null, dashTitles:null, gommeLayout:null, builtinLabels:null, accountSettings:null, maintenanceItems:null, googleCalendar:null };
 let activeTrip = null, activeBbq = null, activeSharedBoard = null, activeProject = null;
 let activeMaintenanceItem = null;
 let goodThingPick = null;
@@ -1838,7 +1851,7 @@ const STATE_KEY_MAP_SHARED = {
 };
 const STATE_KEY_MAP_PRIVATE = {
   dashboard:"dashboard", finance:"finance", hiddenBuiltins:"hiddenBuiltins",
-  gommeLayout:"gommeLayout", customTabs:"customTabsPrivate"
+  gommeLayout:"gommeLayout", customTabs:"customTabsPrivate", googleCalendar:"googleCalendar"
 };
 function restoreSnapshot(storeKey, value, targetTab){
   const privPrefix = "priv:"+(currentUser?currentUser.id:"")+":";
@@ -1921,6 +1934,67 @@ function focusAddInput(day){
 }
 
 function privKey(name){ return "priv:"+currentUser.id+":"+name; }
+
+/* ---------------- Google Calendar (sola lettura) ---------------- */
+// Vero solo se abbiamo in mano un access token non scaduto: è la sola condizione che ci
+// serve per decidere se possiamo chiamare l'API di Calendar in questo momento.
+function gcalHasValidToken(){
+  return !!gcalAccessToken && Date.now() < gcalTokenExpiresAt;
+}
+// Crea (una sola volta) il "token client" di Google Identity Services: è l'oggetto che sa
+// come aprire il popup di consenso di Google e restituirci un access token.
+function ensureGcalTokenClient(){
+  if(gcalTokenClient || typeof google === "undefined" || !google.accounts) return gcalTokenClient;
+  gcalTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: GOOGLE_CALENDAR_SCOPE,
+    callback: (resp)=>{
+      if(resp.error){
+        console.error("Google Calendar auth error", resp);
+        gcalAccessToken = null; gcalTokenExpiresAt = 0;
+        if(resp.error !== "immediate_failed"){ // "immediate_failed" = solo il tentativo silenzioso non è riuscito, non è un rifiuto esplicito
+          alert("Accesso a Google Calendar non riuscito o negato. Puoi riprovare quando vuoi con \"Connetti Google Calendar\".");
+        }
+        render(currentRenderedTab);
+        return;
+      }
+      gcalAccessToken = resp.access_token;
+      gcalTokenExpiresAt = Date.now() + (Number(resp.expires_in||3600) * 1000) - 60000; // 1 min di margine
+      const wasConnected = state.googleCalendar && state.googleCalendar.connected;
+      state.googleCalendar = { connected:true, email: currentUser.email };
+      if(!wasConnected) store.set(privKey("googleCalendar"), state.googleCalendar);
+      else store.setQuiet(privKey("googleCalendar"), state.googleCalendar);
+      render(currentRenderedTab);
+    }
+  });
+  return gcalTokenClient;
+}
+// Avvia il popup di consenso esplicito (click dell'utente sul bottone "Connetti").
+function connectGoogleCalendar(){
+  const client = ensureGcalTokenClient();
+  if(!client){ alert("La libreria di accesso Google non si è ancora caricata, riprova tra un istante."); return; }
+  client.requestAccessToken({ prompt: "consent" });
+}
+// Tentativo "silenzioso" (nessun popup) all'avvio, se l'utente risultava già connesso in
+// precedenza: funziona solo se la sessione Google del browser è ancora attiva e il consenso
+// è già stato dato in passato; altrimenti fallisce senza disturbare l'utente (nessun alert).
+function attemptSilentGcalReauth(){
+  if(gcalSilentAttempted) return;
+  gcalSilentAttempted = true;
+  if(!state.googleCalendar || !state.googleCalendar.connected) return;
+  const client = ensureGcalTokenClient();
+  if(!client) return;
+  client.requestAccessToken({ prompt: "none" });
+}
+// Scollega: dimentica il token in memoria e lo stato salvato. Non revoca il permesso lato
+// Google (l'utente può farlo da myaccount.google.com se vuole); qui semplicemente l'app
+// smette di usarlo, in modo pulito.
+function disconnectGoogleCalendar(){
+  gcalAccessToken = null; gcalTokenExpiresAt = 0;
+  state.googleCalendar = { connected:false, email:null };
+  store.set(privKey("googleCalendar"), state.googleCalendar);
+  render(currentRenderedTab);
+}
 // I colori scelti prima di questa versione erano salvati come esadecimale fisso; qui li
 // convertiamo, una volta sola, nell'indice di palette corrispondente (vedi paletteIndexForColor),
 // così restano armonizzati quando si cambia tema invece di restare fissi.
@@ -2101,6 +2175,7 @@ async function loadAll(){
   state.taglines = await store.get("taglines", DEFAULT_TAGLINES);
   state.dashTitles = await store.get("dashTitles", DEFAULT_DASH_TITLES);
   state.accountSettings = await store.get(privKey("accountSettings"), {notifyFinance27:false});
+  state.googleCalendar = await store.get(privKey("googleCalendar"), {connected:false, email:null});
 }
 
 /* ---------------- auth ---------------- */
@@ -2143,6 +2218,8 @@ async function startApp(){
   render("dashboard");
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.querySelector('.tab[data-tab="dashboard"]').classList.add("active");
+  // Piccolo ritardo per dare tempo allo script accounts.google.com di caricarsi (è async/defer).
+  setTimeout(attemptSilentGcalReauth, 800);
 }
 document.getElementById("login-form").addEventListener("submit", async (e)=>{
   e.preventDefault();
@@ -3148,6 +3225,28 @@ function openMonthlyPrioritiesModal(){
     modal.appendChild(actions);
   });
 }
+// Bottone che riassume lo stato della connessione Google Calendar di QUESTO utente e
+// permette di connettersi/riconnettersi/scollegarsi. Tre stati possibili: non connesso,
+// connesso e funzionante, connesso ma con token scaduto/non rinnovabile in silenzio.
+function buildGcalStatusButton(){
+  const connected = state.googleCalendar && state.googleCalendar.connected;
+  if(!connected){
+    const btn = el("button",{class:"btn ghost small"},"Connetti Google Calendar");
+    btn.addEventListener("click", connectGoogleCalendar);
+    return btn;
+  }
+  if(gcalHasValidToken()){
+    const wrap = el("span",{class:"gcal-status-wrap"});
+    wrap.appendChild(el("span",{class:"btn ghost small", style:"cursor:default;opacity:.75;"},"● Google Calendar connesso"));
+    const off = el("button",{class:"btn ghost small", title:"Scollega Google Calendar"},"Scollega");
+    off.addEventListener("click", ()=>{ if(confirm("Scollegare Google Calendar? Gli eventi non verranno più mostrati finché non ricolleghi.")) disconnectGoogleCalendar(); });
+    wrap.appendChild(off);
+    return wrap;
+  }
+  const btn = el("button",{class:"btn ghost small", style:"color:var(--rust);"},"⚠ Ricollega Google Calendar");
+  btn.addEventListener("click", connectGoogleCalendar);
+  return btn;
+}
 function renderDashboard(main){
   const past = pastDates().filter(d => state.dashboard.days[d] && state.dashboard.days[d].length);
   const todoActions = el("div",{class:"todo-header-actions"});
@@ -3198,6 +3297,7 @@ function renderDashboard(main){
     render("dashboard");
   });
   todoActions.appendChild(backlogToggleBtn);
+  todoActions.appendChild(buildGcalStatusButton());
 
   const headerWrap = el("div",{class:"dash-header-sticky"});
   const titleRow = el("div",{class:"section-head"});

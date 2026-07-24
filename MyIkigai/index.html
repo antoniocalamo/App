@@ -26,6 +26,9 @@
   --tab-text:#FFF6E6;
   --urgent-text:#B3434B;
   --shadow: 0 2px 10px rgba(13,59,62,0.10);
+  --fin-liquid-bg:#E9F6E9; --fin-liquid-border:#B9E0B9; --fin-liquid-head:#2F6B2F;
+  --fin-nonliquid-bg:#DCEBDD; --fin-nonliquid-border:#A8CBA9; --fin-nonliquid-head:#1F4A28;
+  --fin-debts-bg:#FBEAE7; --fin-debts-border:#EFC2BA; --fin-debts-head:#9C3B2E;
 }
 :root[data-app-theme="milano"]{
   --paper:#F7F7F7;
@@ -80,6 +83,9 @@
   --tab-text:#EDEDED;
   --urgent-text:#FF6B6B;
   --shadow: 0 2px 10px rgba(0,0,0,0.4);
+  --fin-liquid-bg:#1E2E22; --fin-liquid-border:#35503F; --fin-liquid-head:#7FBF8A;
+  --fin-nonliquid-bg:#16241D; --fin-nonliquid-border:#2E4A3A; --fin-nonliquid-head:#6BAF7A;
+  --fin-debts-bg:#2E1A18; --fin-debts-border:#4A2A26; --fin-debts-head:#E08670;
 }
 *{box-sizing:border-box;}
 html, body{height:100%;}
@@ -512,6 +518,8 @@ textarea{resize:vertical;}
 .weather-link:hover{text-decoration:underline;}
 .orto-layout{display:flex; gap:14px; align-items:flex-start;}
 .orto-board-wrap{flex:1; min-width:0; overflow:auto; max-height:72vh; -webkit-overflow-scrolling:touch;}
+.orto-board-wrap.orto-hand-mode{cursor:grab;}
+.orto-board-wrap.orto-hand-mode.orto-panning{cursor:grabbing;}
 .orto-board-sizer{position:relative; overflow:hidden; border-radius:14px; border:1px solid var(--line); box-shadow:inset var(--shadow);}
 .orto-board{
   position:absolute; top:0; left:0;
@@ -706,7 +714,14 @@ textarea{resize:vertical;}
   padding:10px 12px; border-radius:10px; cursor:pointer;
   border:1px solid var(--line); background:var(--card); font-size:13.5px; font-weight:600;
 }
+.coll-item.dragging{opacity:.5;}
+.coll-item.drag-over{outline:2px dashed var(--forest); outline-offset:-3px;}
 .coll-item-name-row{display:flex; align-items:center; gap:8px;}
+.coll-item-grip{width:11px; height:15px; flex-shrink:0; opacity:.35; cursor:grab; touch-action:none;}
+.coll-item-grip svg{width:100%; height:100%; display:block;}
+.coll-item-grip:hover{opacity:.8;}
+.coll-item.active .coll-item-grip{color:#fff;}
+.coll-item-color-dot{width:9px; height:9px; border-radius:50%; flex-shrink:0; border:1px solid rgba(0,0,0,0.15);}
 .coll-item-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .coll-item-rename{width:12px; height:12px; flex-shrink:0; opacity:.4; cursor:pointer;}
 .coll-item-rename svg{width:100%; height:100%; display:block;}
@@ -1019,12 +1034,12 @@ table.tires textarea.gomme-cell{
 .invest-edit-lot-row{display:flex; align-items:center; gap:6px;}
 .invest-edit-lot-row select{width:90px; flex-shrink:0;}
 .invest-edit-lot-input{width:auto; flex:1; min-width:0;}
-.finance-block-liquidity{background:#E9F6E9; border-color:#B9E0B9;}
-.finance-block-liquidity h4{color:#2F6B2F;}
-.finance-block-nonliquid{background:#DCEBDD; border-color:#A8CBA9;}
-.finance-block-nonliquid h4{color:#1F4A28;}
-.finance-block-debts{background:#FBEAE7; border-color:#EFC2BA;}
-.finance-block-debts h4{color:#9C3B2E;}
+.finance-block-liquidity{background:var(--fin-liquid-bg); border-color:var(--fin-liquid-border);}
+.finance-block-liquidity h4{color:var(--fin-liquid-head);}
+.finance-block-nonliquid{background:var(--fin-nonliquid-bg); border-color:var(--fin-nonliquid-border);}
+.finance-block-nonliquid h4{color:var(--fin-nonliquid-head);}
+.finance-block-debts{background:var(--fin-debts-bg); border-color:var(--fin-debts-border);}
+.finance-block-debts h4{color:var(--fin-debts-head);}
 .finance-item{border-bottom:1px dashed var(--line); padding:2px 0;}
 .finance-item:last-of-type{border-bottom:none;}
 .finance-row{
@@ -1344,11 +1359,11 @@ table.tires textarea.gomme-cell{
     </button>
     <button class="tab custom-tab" data-c="grigliate" data-tab="grigliate" data-builtin="grigliate">
       <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"><path d="M12 21c4 0 6-2.5 6-6 0-3-2-4.5-3-7 0 2-1.5 3-1.5 3S14 8 12 3c0 4-5 6-5 11 0 .5 0 1 .1 1.5C6.5 14 6 13 6 13c-.5 2 0 8 6 8Z"/></svg></span>
-      <span class="tab-label"><span class="tab-label-main">Grigliate</span></span>
+      <span class="tab-label"><span class="tab-label-main">Eventi</span></span>
     </button>
     <button class="tab custom-tab" data-c="gomme" data-tab="gomme" data-builtin="gomme">
       <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></span>
-      <span class="tab-label"><span class="tab-label-main">Gomme</span></span>
+      <span class="tab-label"><span class="tab-label-main">Manutenzione</span></span>
     </button>
     <button class="tab custom-tab" data-c="progetti" data-tab="progetti" data-builtin="progetti">
       <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h6M7 13h10M7 17h4"/></svg></span>
@@ -1621,14 +1636,33 @@ const STANDARD_ICONS = {
   paint: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 20c1-3 2-5 5-5s3 2 5 2 3-6 6-9"/><circle cx="8" cy="7" r="2"/></svg>',
   sofa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 12v5h16v-5"/><path d="M4 12a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2M6 10V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2M4 15v3M20 15v3"/></svg>'
 };
-const TAB_COLORS = ["#2B4638","#4C7A4C","#2F5B5E","#8C3A26","#AD7A22","#233A46","#57394F"];
+// 9 colori per tema, pensati per restare "in tono" con l'identità di ciascun tema ma con
+// tonalità (non solo luminosità) sufficientemente diverse tra loro da essere distinguibili
+// anche per chi ha una discromatopsia (es. non più "quattro grigi diversi" in fila).
+const TAB_COLORS = ["#2B4638","#8C3A26","#AD7A22","#2F5B5E","#233A46","#57394F","#6B7A4F","#C97B63","#4A4E7C"];
 const THEME_TAB_PALETTES = {
-  ikigai: ["#2B4638","#4C7A4C","#2F5B5E","#8C3A26","#AD7A22","#233A46","#57394F"],
-  milano: ["#2C2C2C","#4A4A4A","#6E6E6E","#8A8A8A","#B3261E","#C9A46A","#3D3D3D"],
-  pirati: ["#0E2238","#1E4D6B","#2F6690","#5B3A1A","#8C6E3A","#C89D4A","#3A5568"],
-  ninja:  ["#2A2A2A","#C41E3A","#5F6B6B","#707070","#A8763A","#8B4B6B","#3F3F3F"]
+  ikigai: ["#2B4638","#8C3A26","#AD7A22","#2F5B5E","#233A46","#57394F","#6B7A4F","#C97B63","#4A4E7C"],
+  milano: ["#2C2C2C","#B3261E","#C9A46A","#6B2737","#1F5C5C","#22344A","#6B7A4F","#9C8770","#6E6E6E"],
+  pirati: ["#0E2238","#1E4D6B","#5B3A1A","#C89D4A","#3A5568","#7A2020","#4A7A5E","#2F6690","#8C6E3A"],
+  ninja:  ["#232323","#C41E3A","#5B3A5F","#4A5A66","#A8763A","#3E6B5E","#7A2634","#2E3A5C","#6E625A"]
 };
 function currentTabPalette(){ return THEME_TAB_PALETTES[appTheme] || TAB_COLORS; }
+// I colori scelti per schede/sotto-schede/task si salvano come indice nella palette (0-6),
+// non come esadecimale: così, cambiando tema, il colore visualizzato si aggiorna sull'equivalente
+// armonizzato del nuovo tema invece di restare fisso e stonare.
+function paletteIndexForColor(hex){
+  if(!hex) return -1;
+  for(const k in THEME_TAB_PALETTES){
+    const idx = THEME_TAB_PALETTES[k].indexOf(hex);
+    if(idx>-1) return idx;
+  }
+  return TAB_COLORS.indexOf(hex);
+}
+function colorForIndex(idx){
+  if(idx===undefined || idx===null || idx<0) return null;
+  const pal = currentTabPalette();
+  return pal[((idx%pal.length)+pal.length)%pal.length];
+}
 const DAY_COLORS = { "Lunedì":"#2B4638","Martedì":"#4C7A4C","Mercoledì":"#2F5B5E","Giovedì":"#AD7A22","Venerdì":"#8C3A26","Sabato":"#57394F","Domenica":"#233A46" };
 const TRIP_TEMPLATE = () => ([]);
 const BBQ_TEMPLATE = () => ([]);
@@ -1669,6 +1703,13 @@ function applyZoom(){
   document.body.style.zoom = uiZoom;
   document.getElementById("zoom-level").textContent = Math.round(uiZoom*100)+"%";
 }
+// Dopo un cambio tema, i colori scelti (indice di palette) vanno ridipinti sul nuovo tema:
+// tab builtin, schede personalizzate, ed eventuali sotto-schede/task colorati nella vista aperta.
+function refreshThemeColoredUI(){
+  applyBuiltinColors();
+  if(typeof renderCustomTabButtons==="function") renderCustomTabButtons();
+  if(typeof currentRenderedTab!=="undefined" && currentRenderedTab) render(currentRenderedTab);
+}
 try{
   const savedLocalTheme = window.localStorage.getItem("myikigai_theme_pref");
   if(savedLocalTheme && THEMES[savedLocalTheme]) appTheme = savedLocalTheme;
@@ -1677,6 +1718,7 @@ applyAppTheme();
 document.getElementById("app-theme-select").addEventListener("change", (e)=>{
   appTheme = e.target.value;
   applyAppTheme();
+  refreshThemeColoredUI();
   store.set(privKey("appTheme"), appTheme);
   try{ window.localStorage.setItem("myikigai_theme_pref", appTheme); }catch(err){}
 });
@@ -1797,7 +1839,7 @@ const STATE_KEY_MAP_PRIVATE = {
 };
 function restoreSnapshot(storeKey, value, targetTab){
   const privPrefix = "priv:"+(currentUser?currentUser.id:"")+":";
-  if(storeKey === privPrefix+"appTheme"){ appTheme = value; applyAppTheme(); }
+  if(storeKey === privPrefix+"appTheme"){ appTheme = value; applyAppTheme(); refreshThemeColoredUI(); }
   else if(storeKey === privPrefix+"uiZoom"){ uiZoom = value; applyZoom(); }
   else if(storeKey.indexOf(privPrefix)===0){
     const stripped = storeKey.slice(privPrefix.length);
@@ -1876,6 +1918,49 @@ function focusAddInput(day){
 }
 
 function privKey(name){ return "priv:"+currentUser.id+":"+name; }
+// I colori scelti prima di questa versione erano salvati come esadecimale fisso; qui li
+// convertiamo, una volta sola, nell'indice di palette corrispondente (vedi paletteIndexForColor),
+// così restano armonizzati quando si cambia tema invece di restare fissi.
+function migrateColorField(obj, field){
+  if(obj && typeof obj[field]==="string" && obj[field].charAt(0)==="#"){
+    const idx = paletteIndexForColor(obj[field]);
+    obj[field] = idx>-1 ? idx : undefined;
+  }
+}
+// Le sotto schede create prima dell'introduzione dei template non avevano un campo "type":
+// erano comunque tutte checklist. Qui lo rendiamo esplicito una volta per tutte, e migriamo
+// anche il colore (vedi migrateColorField) se già impostato come esadecimale.
+function migrateSubItemTypes(arr){
+  (arr||[]).forEach(item=>{
+    if(!item.type) item.type = "checklist";
+    migrateColorField(item, "color");
+  });
+  return arr;
+}
+// Gomme era un tipo custom fisso ("tires"); qui la convertiamo, una volta sola, nel tipo
+// generico "table" con le stesse colonne (Treno, Intervento, Data, Km, Note), portando dentro
+// le righe che c'erano nella vecchia chiave "tires". Da qui in poi Gomme è una sotto-scheda
+// Tabella come le altre, non più un tipo a parte.
+function migrateGommeToTable(){
+  let target = state.maintenanceItems.find(it=>it.id==="tires");
+  if(target && target.type==="table") return; // già migrata
+  if(!target){
+    target = {id:"tires", name:"Gomme", created:new Date().toLocaleDateString("it-IT")};
+    state.maintenanceItems.unshift(target);
+  }
+  target.type = "table";
+  target.columns = [
+    {id:"treno", label:"Treno", width:110},
+    {id:"intervento", label:"Intervento", width:220},
+    {id:"data", label:"Data", width:130, type:"date"},
+    {id:"km", label:"Km", width:80},
+    {id:"note", label:"Note", width:220}
+  ];
+  target.rows = (state.tires||[]).map(r=>({
+    id:r.id, treno:r.treno||"", intervento:r.intervento||"", data:r.data||"", km:r.km||"", note:r.note||""
+  }));
+  store.set("maintenanceItems", state.maintenanceItems);
+}
 
 async function loadAll(){
   customTabData = {}; activeCustomItem = {};
@@ -1958,10 +2043,11 @@ async function loadAll(){
     store.setQuiet("orto", state.orto);
   }
   state.weatherLocation = await store.get("weatherLocation", DEFAULTS.weatherLocation);
-  state.trips = await store.get("trips", DEFAULTS.trips);
-  state.bbqs = await store.get("bbqs", DEFAULTS.bbqs);
+  state.trips = migrateSubItemTypes(await store.get("trips", DEFAULTS.trips));
+  state.bbqs = migrateSubItemTypes(await store.get("bbqs", DEFAULTS.bbqs));
   state.tires = await store.get("tires", DEFAULTS.tires);
-  state.maintenanceItems = await store.get("maintenanceItems", [{id:"tires", name:"Gomme", type:"tires", created:new Date().toLocaleDateString("it-IT")}]);
+  state.maintenanceItems = migrateSubItemTypes(await store.get("maintenanceItems", [{id:"tires", name:"Gomme", type:"tires", created:new Date().toLocaleDateString("it-IT")}]));
+  migrateGommeToTable();
   state.finance = await store.get(privKey("finance"), DEFAULTS.finance);
   if(!state.finance.investments) state.finance.investments = [];
   if(state.finance.investAutoPriceEnabled===undefined) state.finance.investAutoPriceEnabled = false;
@@ -1993,13 +2079,17 @@ async function loadAll(){
     state.finance.investments = order.map(k=>merged[k]);
     store.setQuiet(privKey("finance"), state.finance);
   }
-  state.sharedBoards = await store.get("sharedBoards", DEFAULTS.sharedBoards);
+  state.sharedBoards = migrateSubItemTypes(await store.get("sharedBoards", DEFAULTS.sharedBoards));
   state.projects = await store.get("projects", DEFAULTS.projects);
+  state.projects.forEach(p=>((p.data&&p.data.tasks)||[]).forEach(t=>migrateColorField(t, "color")));
   state.customTabs = await store.get("customTabs", []);
+  state.customTabs.forEach(t=>migrateColorField(t, "color"));
   state.customTabsPrivate = await store.get(privKey("customTabs"), []);
+  state.customTabsPrivate.forEach(t=>migrateColorField(t, "color"));
   state.hiddenBuiltins = await store.get(privKey("hiddenBuiltins"), []);
   state.builtinLabels = await store.get(privKey("builtinLabels"), {});
   state.builtinColors = await store.get(privKey("builtinColors"), {});
+  Object.keys(state.builtinColors).forEach(k=>migrateColorField(state.builtinColors, k));
   state.builtinIcons = await store.get(privKey("builtinIcons"), {});
   state.builtinOrder = await store.get(privKey("builtinOrder"), []);
   state.gommeLayout = await store.get(privKey("gommeLayout"), {colWidths:{}, rowHeights:{}});
@@ -2225,12 +2315,13 @@ function openTabEditModal(opts){
     modal.appendChild(picker);
     modal.appendChild(el("div",{class:"field-label", style:"margin-top:10px;"},"Colore"));
     const colorPicker = el("div",{class:"color-picker"});
-    currentTabPalette().forEach(c=>{
-      const dot = el("div",{class:"color-choice"+(c===opts.getColor()?" selected":""), style:`background:${c}`});
+    const selIdx = opts.getColor();
+    currentTabPalette().forEach((c,ci)=>{
+      const dot = el("div",{class:"color-choice"+(ci===selIdx?" selected":""), style:`background:${c}`});
       dot.addEventListener("click", ()=>{
         colorPicker.querySelectorAll(".color-choice").forEach(d=>d.classList.remove("selected"));
         dot.classList.add("selected");
-        opts.setColor(c); opts.afterSave();
+        opts.setColor(ci); opts.afterSave();
       });
       colorPicker.appendChild(dot);
     });
@@ -2255,6 +2346,46 @@ function openTabEditModal(opts){
     closeBtn.addEventListener("click", close);
     actions.appendChild(closeBtn);
     modal.appendChild(actions);
+  });
+}
+// Modale unico per una sotto-scheda: rinomina, colore ed eliminazione.
+function openSubItemEditModal(item, opts){
+  openModal((modal, close)=>{
+    modal.appendChild(el("h3",{},"Modifica sotto-scheda"));
+    modal.appendChild(el("div",{class:"field-label"},"Nome"));
+    const nameInput = el("input",{type:"text", value:item.name});
+    modal.appendChild(nameInput);
+    nameInput.addEventListener("change", ()=>{
+      if(nameInput.value.trim()) opts.onRename(nameInput.value.trim());
+    });
+    modal.appendChild(el("div",{class:"field-label", style:"margin-top:10px;"},"Colore"));
+    const colorPicker = el("div",{class:"color-picker"});
+    (opts.palette || currentTabPalette()).forEach((c,ci)=>{
+      const dot = el("div",{class:"color-choice"+(ci===item.color?" selected":""), style:`background:${c}`});
+      dot.addEventListener("click", ()=>{
+        colorPicker.querySelectorAll(".color-choice").forEach(d=>d.classList.remove("selected"));
+        dot.classList.add("selected");
+        opts.onColorChange(ci);
+      });
+      colorPicker.appendChild(dot);
+    });
+    modal.appendChild(colorPicker);
+    const actions = el("div",{class:"modal-actions"});
+    const delBtn = el("button",{class:"btn danger small", style:"margin-right:auto;"}, opts.delBtnLabel || "Elimina sotto-scheda");
+    delBtn.addEventListener("click", ()=>{
+      if(!confirm('Eliminare la sotto-scheda "'+item.name+'"?')) return;
+      opts.onDelete();
+      close();
+    });
+    actions.appendChild(delBtn);
+    const resetColorBtn = el("button",{class:"btn ghost"},"Colore predefinito");
+    resetColorBtn.addEventListener("click", ()=>{ opts.onColorChange(null); close(); });
+    actions.appendChild(resetColorBtn);
+    const closeBtn = el("button",{class:"btn ghost"},"Chiudi");
+    closeBtn.addEventListener("click", close);
+    actions.appendChild(closeBtn);
+    modal.appendChild(actions);
+    nameInput.focus();
   });
 }
 function emptyState(text, iconSvg){
@@ -2449,8 +2580,14 @@ function computeStats(){
   const pct = total ? Math.round(done/total*100) : 0;
   const activeChecklists = state.trips.length + state.bbqs.length;
   let lastTire = "—";
-  const dated = state.tires.filter(t=>t.data).sort((a,b)=> new Date(b.data)-new Date(a.data));
-  if(dated.length) lastTire = new Date(dated[0].data).toLocaleDateString("it-IT");
+  const tiresItem = (state.maintenanceItems||[]).find(it=>it.id==="tires");
+  if(tiresItem && tiresItem.type==="table"){
+    const dateCol = (tiresItem.columns||[]).find(c=>c.type==="date");
+    if(dateCol){
+      const dated = (tiresItem.rows||[]).filter(r=>r[dateCol.id]).sort((a,b)=> new Date(b[dateCol.id]) - new Date(a[dateCol.id]));
+      if(dated.length) lastTire = new Date(dated[0][dateCol.id]).toLocaleDateString("it-IT");
+    }
+  }
   return { pct, activeChecklists, lastTire, net: computeNetWorth() };
 }
 function visibleDates(){
@@ -3366,6 +3503,7 @@ function openNewBoxModal(){
 let activeCommentId = null;
 let selectedOrtoObjId = null;
 let ortoZoom = 1;
+let ortoHandMode = false;
 const ORTO_CANVAS_W = 1800, ORTO_CANVAS_H = 1100;
 let ortoClipboard = null;
 let ortoKeyListenerAttached = false;
@@ -3508,6 +3646,10 @@ function renderOrto(main){
   zoomControls.appendChild(zoomOutBtn); zoomControls.appendChild(zoomLabel); zoomControls.appendChild(zoomInBtn); zoomControls.appendChild(zoomResetBtn);
   toolbar.appendChild(zoomControls);
 
+  const handBtn = el("button",{class:"btn "+(ortoHandMode?"primary":"ghost"), title:"Mano: trascina per spostare la vista, senza muovere gli oggetti (come in Photoshop)"}, "✋ Mano");
+  handBtn.addEventListener("click", ()=>{ ortoHandMode = !ortoHandMode; render("orto"); });
+  toolbar.appendChild(handBtn);
+
   const activeSeasonForBtn = getActiveOrtoSeason();
   const seasonsBtn = el("button",{class:"btn ghost"}, "📅 Stagioni" + (activeSeasonForBtn ? " · "+activeSeasonForBtn.season+" "+activeSeasonForBtn.year : ""));
   seasonsBtn.addEventListener("click", openOrtoSeasonsModal);
@@ -3541,6 +3683,28 @@ function renderOrto(main){
   const board = el("div",{class:"orto-board", id:"orto-board", style:`width:${ORTO_CANVAS_W}px; height:${ORTO_CANVAS_H}px; transform:scale(${ortoZoom});`});
   sizer.appendChild(board);
   boardWrap.appendChild(sizer);
+  if(ortoHandMode){
+    boardWrap.classList.add("orto-hand-mode");
+    boardWrap.addEventListener("pointerdown",(e)=>{
+      if(e.pointerType==="mouse" && e.button!==0) return;
+      e.preventDefault();
+      boardWrap.setPointerCapture(e.pointerId);
+      boardWrap.classList.add("orto-panning");
+      const startX = e.clientX, startY = e.clientY;
+      const startScrollLeft = boardWrap.scrollLeft, startScrollTop = boardWrap.scrollTop;
+      function move(ev){
+        boardWrap.scrollLeft = startScrollLeft - (ev.clientX-startX);
+        boardWrap.scrollTop = startScrollTop - (ev.clientY-startY);
+      }
+      function up(){
+        boardWrap.removeEventListener("pointermove", move);
+        boardWrap.removeEventListener("pointerup", up);
+        boardWrap.classList.remove("orto-panning");
+      }
+      boardWrap.addEventListener("pointermove", move);
+      boardWrap.addEventListener("pointerup", up);
+    });
+  }
   layoutWrap.appendChild(boardWrap);
 
   function ortoZBand(o){
@@ -3724,6 +3888,7 @@ function renderOrto(main){
   });
 
   board.addEventListener("mousedown",(e)=>{
+    if(ortoHandMode) return;
     if(e.target===board){ activeCommentId=null; selectedOrtoObjId=null; render("orto"); }
   });
 
@@ -4069,6 +4234,7 @@ function makeDraggable(handleEl, item, board, opts={}){
   const isPin = !!opts.isPin;
   const onTap = opts.onTap;
   handleEl.addEventListener("pointerdown",(e)=>{
+    if(ortoHandMode) return;
     if(e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "BUTTON" ||
        e.target.closest(".orto-ctrl")) return;
     e.preventDefault();
@@ -4124,6 +4290,7 @@ function makeResizable(handle, node, obj, board, onResize, corner){
   const leftEdge = corner==="bl" || corner==="tl";
   const topEdge = corner==="tl" || corner==="tr";
   handle.addEventListener("pointerdown",(e)=>{
+    if(ortoHandMode) return;
     e.preventDefault(); e.stopPropagation();
     handle.setPointerCapture(e.pointerId);
     const startX = e.clientX, startY = e.clientY;
@@ -4213,23 +4380,33 @@ function renderCollection(main, opts){
     });
   });
   list.appendChild(newBtn);
-  state[key].forEach(c=>{
+  state[key].forEach((c,ci)=>{
     const it = el("div",{class:"coll-item"+(active===c.id?" active":"")});
+    const cHex = colorForIndex(c.color);
+    if(cHex){ it.style.background = active===c.id ? cHex : ""; it.style.borderColor = cHex; }
     const nameRow = el("div",{class:"coll-item-name-row"});
+    const grip = el("span",{class:"coll-item-grip", html:ICON_GRIP, title:"Trascina per riordinare"});
+    nameRow.appendChild(grip);
+    if(cHex) nameRow.appendChild(el("span",{class:"coll-item-color-dot", style:`background:${cHex};`}));
     nameRow.appendChild(el("span",{class:"coll-item-name"}, c.name));
     const renameBtn = el("span",{class:"coll-item-rename", html:ICON_EDIT, title:renameTitle});
     renameBtn.addEventListener("click",(e)=>{
       e.stopPropagation();
-      const newName = prompt(renamePrompt, c.name);
-      if(newName && newName.trim()){
-        c.name = newName.trim();
-        store.set(key, state[key]); render(opts.tab);
-      }
+      openSubItemEditModal(c, {
+        delBtnLabel: delBtnLabel,
+        onRename:(name)=>{ c.name=name; store.set(key, state[key]); render(opts.tab); },
+        onColorChange:(idx)=>{ c.color=(idx==null?undefined:idx); store.set(key, state[key]); render(opts.tab); },
+        onDelete:()=>{
+          state[key] = state[key].filter(x=>x.id!==c.id);
+          store.set(key, state[key]); setActive(null); render(opts.tab);
+        }
+      });
     });
     nameRow.appendChild(renameBtn);
     it.appendChild(nameRow);
     it.appendChild(el("div",{style:"font-weight:400;font-size:11px;opacity:.75;margin-top:2px;"}, c.created));
     it.addEventListener("click", ()=>{ setActive(c.id); render(opts.tab); });
+    attachRowDrag(grip, it, ci, state[key], ()=>{ store.set(key, state[key]); render(opts.tab); });
     list.appendChild(it);
   });
   wrap.appendChild(list);
@@ -4239,13 +4416,6 @@ function renderCollection(main, opts){
   if(!current){
     detail.appendChild(emptyState(emptyStateText, emptyStateIcon));
   } else {
-    const delBtn = el("button",{class:"btn danger small"}, delBtnLabel);
-    delBtn.style.marginBottom="14px";
-    delBtn.addEventListener("click", ()=>{
-      state[key] = state[key].filter(c=>c.id!==current.id);
-      store.set(key, state[key]); setActive(null); render(opts.tab);
-    });
-    detail.appendChild(delBtn);
     if(current.type==="table"){
       renderGenericTable(detail, current, (quiet)=>{ store.set(key, state[key]); if(!quiet) render(opts.tab); });
     } else {
@@ -4282,7 +4452,11 @@ function openNewSubItemModal(namePromptLabel, onCreate){
     cancelBtn.addEventListener("click", close);
     const createBtn = el("button",{class:"btn primary"},"Crea");
     createBtn.addEventListener("click", ()=>{
-      if(!nameInput.value.trim()) return;
+      if(!nameInput.value.trim()){
+        alert("Il nome della sotto-scheda è obbligatorio.");
+        nameInput.focus();
+        return;
+      }
       onCreate(nameInput.value.trim(), selected);
       close();
     });
@@ -4370,10 +4544,16 @@ function renderGenericTable(container, item, onSave){
     const tr = el("tr",{style: rowH ? `height:${rowH}px;` : ""});
     item.columns.forEach(col=>{
       const td = el("td",{style:"position:relative;"});
-      const inp = el("textarea",{rows:"1", class:"gomme-cell"});
-      inp.value = row[col.id]||"";
-      inp.addEventListener("input", ()=>autoResize(inp));
-      inp.addEventListener("change", ()=>{ row[col.id]=inp.value; onSave(true); });
+      let inp;
+      if(col.type==="date"){
+        inp = el("input",{type:"date", value:row[col.id]||""});
+        inp.addEventListener("change", ()=>{ row[col.id]=inp.value; onSave(true); });
+      } else {
+        inp = el("textarea",{rows:"1", class:"gomme-cell"});
+        inp.value = row[col.id]||"";
+        inp.addEventListener("input", ()=>autoResize(inp));
+        inp.addEventListener("change", ()=>{ row[col.id]=inp.value; onSave(true); });
+      }
       td.appendChild(inp);
       tr.appendChild(td);
     });
@@ -4583,13 +4763,13 @@ function openProjectTaskModal(project, task, save){
     modal.appendChild(progRow);
     modal.appendChild(el("div",{class:"field-label"},"Colore"));
     const colorPicker = el("div",{class:"color-picker"});
-    let selColor = task.color || currentTabPalette()[0];
-    currentTabPalette().forEach(c=>{
-      const dot = el("div",{class:"color-choice"+(c===selColor?" selected":"")});
+    let selColorIdx = task.color!=null ? task.color : 0;
+    currentTabPalette().forEach((c,ci)=>{
+      const dot = el("div",{class:"color-choice"+(ci===selColorIdx?" selected":"")});
       dot.style.background = c;
       dot.addEventListener("click", ()=>{
         colorPicker.querySelectorAll(".color-choice").forEach(d=>d.classList.remove("selected"));
-        dot.classList.add("selected"); selColor = c;
+        dot.classList.add("selected"); selColorIdx = ci;
       });
       colorPicker.appendChild(dot);
     });
@@ -4614,7 +4794,7 @@ function openProjectTaskModal(project, task, save){
       task.start = s; task.end = e;
       task.progress = parseInt(progInp.value,10)||0;
       task.done = task.progress >= 100;
-      task.color = selColor;
+      task.color = selColorIdx;
       if(!task.id){ task.id = "pt"+Date.now(); project.data.tasks.push(task); }
       ganttSave(project); close(); render("progetti");
     });
@@ -4696,7 +4876,7 @@ function renderProjectDetail(detail, project){
     const endOff = ganttDateToOffset(t.end, rangeStart);
     const durDays = Math.max(1, endOff-startOff+1);
     const bar = el("div",{class:"gantt-bar"+(t.done?" done":""), style:
-      `left:${startOff*GANTT_PX_PER_DAY}px; top:${i*GANTT_ROW_H+7}px; width:${durDays*GANTT_PX_PER_DAY - 4}px; background:${t.color||"var(--forest)"};`});
+      `left:${startOff*GANTT_PX_PER_DAY}px; top:${i*GANTT_ROW_H+7}px; width:${durDays*GANTT_PX_PER_DAY - 4}px; background:${colorForIndex(t.color)||"var(--forest)"};`});
     const fill = el("div",{class:"gantt-bar-fill", style:`width:${Math.min(100,t.progress||0)}%;`});
     bar.appendChild(fill);
     bar.appendChild(el("span",{class:"gantt-bar-label"}, t.name));
@@ -4789,131 +4969,14 @@ function renderProjectDetail(detail, project){
 function renderBbqDetail(detail, bbq){
   const save = (quiet)=>{ (quiet?store.setQuiet:store.set)("bbqs", state.bbqs); render("grigliate"); };
   renderCategorizedChecklist(detail, bbq, save, "g"+bbq.id, "grigliate");
-
-  const noteBlock = el("div",{class:"cat-block"});
-  noteBlock.appendChild(el("h4",{},"Note / lesson learned"));
-  const ta = el("textarea",{rows:"4", class:"long-note", placeholder:"es. iniziare la griglia con 30-45 min di anticipo…"});
-  ta.value = bbq.notes || "";
-  ta.addEventListener("change", ()=>{ bbq.notes = ta.value; store.set("bbqs", state.bbqs); });
-  noteBlock.appendChild(ta);
-  detail.appendChild(noteBlock);
 }
 
 /* ---------------- MANUTENZIONE (ex Gomme) ---------------- */
-const GOMME_FIELDS = [
-  ["treno","text","Treno",110],["intervento","text","Intervento",220],["data","date","Data",130],
-  ["km","text","Km",80],["note","text","Note",220]
-];
 // La scheda Manutenzione è una collezione di sotto schede (state.maintenanceItems), con lo
-// stesso layout elenco+dettaglio di Viaggi/Grigliate. La sotto scheda "Gomme" (type:"tires")
-// è quella storica con la tabella a colonne fisse e non si può eliminare (ma si può rinominare);
-// tutte le altre (type:"checklist") sono checklist a categorie come quelle di Viaggi/Grigliate.
-function renderTiresTable(container){
-  const addBtn = el("button",{class:"btn primary"},"+ Nuovo intervento");
-  addBtn.style.marginBottom="14px";
-  addBtn.addEventListener("click", ()=>{
-    state.tires.push({id:"g"+Date.now(), treno:"", intervento:"", data:"", km:"", note:""});
-    store.set("tires", state.tires); render("gomme");
-  });
-  container.appendChild(addBtn);
-
-  const layout = state.gommeLayout;
-  const wrap = el("div",{style:"overflow-x:auto;"});
-  const table = el("table",{class:"tires card"});
-  const colgroup = el("colgroup");
-  const cols = {};
-  GOMME_FIELDS.forEach(([f,,,defaultW])=>{
-    const w = layout.colWidths[f] || defaultW;
-    const col = el("col",{style:`width:${w}px;`});
-    cols[f] = col;
-    colgroup.appendChild(col);
-  });
-  colgroup.appendChild(el("col",{style:"width:36px;"}));
-  table.appendChild(colgroup);
-
-  const headRow = el("tr");
-  GOMME_FIELDS.forEach(([f,,label])=>{
-    const th = el("th",{style:"position:relative;"}, label);
-    const handle = el("span",{class:"col-resize-handle"});
-    handle.addEventListener("pointerdown",(e)=>{
-      e.preventDefault();
-      handle.setPointerCapture(e.pointerId);
-      const startX = e.clientX;
-      const startW = parseInt(cols[f].style.width, 10);
-      function move(ev){
-        const w = Math.max(50, startW + (ev.clientX - startX));
-        cols[f].style.width = w+"px";
-        layout.colWidths[f] = w;
-      }
-      function up(){
-        handle.removeEventListener("pointermove", move);
-        handle.removeEventListener("pointerup", up);
-        store.set(privKey("gommeLayout"), layout);
-      }
-      handle.addEventListener("pointermove", move);
-      handle.addEventListener("pointerup", up);
-    });
-    th.appendChild(handle);
-    headRow.appendChild(th);
-  });
-  headRow.appendChild(el("th",{},""));
-  table.appendChild(headRow);
-
-  state.tires.forEach((row,i)=>{
-    const rowH = layout.rowHeights[row.id];
-    const tr = el("tr",{style: rowH ? `height:${rowH}px;` : ""});
-    GOMME_FIELDS.forEach(([f,type])=>{
-      const td = el("td",{style:"position:relative;"});
-      let inp;
-      if(type==="date"){
-        inp = el("input",{type, value:row[f]||""});
-        inp.addEventListener("change", ()=>{ row[f]=inp.value; store.set("tires", state.tires); });
-      } else {
-        inp = el("textarea",{rows:"1", class:"gomme-cell"});
-        inp.value = row[f]||"";
-        inp.addEventListener("input", ()=>autoResize(inp));
-        inp.addEventListener("change", ()=>{ row[f]=inp.value; store.set("tires", state.tires); });
-      }
-      td.appendChild(inp);
-      tr.appendChild(td);
-    });
-    const lastTd = el("td",{style:"position:relative;"});
-    const del = el("button",{class:"btn small danger"},"✕");
-    del.addEventListener("click", ()=>{
-      state.tires.splice(i,1); store.set("tires", state.tires); render("gomme");
-    });
-    lastTd.appendChild(del);
-    const rowHandle = el("span",{class:"row-resize-handle"});
-    rowHandle.addEventListener("pointerdown",(e)=>{
-      e.preventDefault();
-      rowHandle.setPointerCapture(e.pointerId);
-      const startY = e.clientY;
-      const startH = tr.offsetHeight;
-      function move(ev){
-        const h = Math.max(28, startH + (ev.clientY - startY));
-        tr.style.height = h+"px";
-        layout.rowHeights[row.id] = h;
-      }
-      function up(){
-        rowHandle.removeEventListener("pointermove", move);
-        rowHandle.removeEventListener("pointerup", up);
-        store.set(privKey("gommeLayout"), layout);
-      }
-      rowHandle.addEventListener("pointermove", move);
-      rowHandle.addEventListener("pointerup", up);
-    });
-    lastTd.appendChild(rowHandle);
-    tr.appendChild(lastTd);
-    table.appendChild(tr);
-  });
-  wrap.appendChild(table);
-  container.appendChild(wrap);
-}
+// stesso layout elenco+dettaglio di Viaggi/Eventi. "Gomme" è una sotto-scheda Tabella come le
+// altre (migrata dal vecchio formato fisso in migrateGommeToTable()); tutte le altre sotto
+// schede possono essere Checklist (categorie/voci) o Tabella (righe/colonne libere).
 function renderMaintenanceItemDetail(detail, item){
-  if(item.type==="tires"){
-    renderTiresTable(detail);
-    return;
-  }
   if(item.type==="table"){
     renderGenericTable(detail, item, (quiet)=>{ store.set("maintenanceItems", state.maintenanceItems); if(!quiet) render("gomme"); });
     return;
@@ -4924,10 +4987,11 @@ function renderMaintenanceItemDetail(detail, item){
 }
 function renderGomme(main){
   if(!state.maintenanceItems.length){
-    state.maintenanceItems = [{id:"tires", name:"Gomme", type:"tires", created:new Date().toLocaleDateString("it-IT")}];
+    state.maintenanceItems = [{id:"tires", name:"Gomme", created:new Date().toLocaleDateString("it-IT")}];
+    migrateGommeToTable();
   }
   main.appendChild(el("div",{class:"section-head"},[
-    builtinTabHeader("gomme","Gomme"),
+    builtinTabHeader("gomme","Manutenzione"),
     el("span",{class:"tag"}, state.maintenanceItems.length+" sotto schede")
   ]));
 
@@ -4950,41 +5014,41 @@ function renderGomme(main){
   if(!activeMaintenanceItem || !state.maintenanceItems.find(it=>it.id===activeMaintenanceItem)){
     activeMaintenanceItem = state.maintenanceItems[0].id;
   }
-  state.maintenanceItems.forEach(item=>{
+  state.maintenanceItems.forEach((item,ii)=>{
     const it = el("div",{class:"coll-item"+(activeMaintenanceItem===item.id?" active":"")});
+    const itemHex = colorForIndex(item.color);
+    if(itemHex){ it.style.background = activeMaintenanceItem===item.id ? itemHex : ""; it.style.borderColor = itemHex; }
     const nameRow = el("div",{class:"coll-item-name-row"});
+    const grip = el("span",{class:"coll-item-grip", html:ICON_GRIP, title:"Trascina per riordinare"});
+    nameRow.appendChild(grip);
+    if(itemHex) nameRow.appendChild(el("span",{class:"coll-item-color-dot", style:`background:${itemHex};`}));
     nameRow.appendChild(el("span",{class:"coll-item-name"}, item.name));
-    const renameBtn = el("span",{class:"coll-item-rename", html:ICON_EDIT, title:"Rinomina sotto scheda"});
+    const renameBtn = el("span",{class:"coll-item-rename", html:ICON_EDIT, title:"Modifica sotto scheda"});
     renameBtn.addEventListener("click",(e)=>{
       e.stopPropagation();
-      const newName = prompt("Rinomina sotto scheda:", item.name);
-      if(newName && newName.trim()){
-        item.name = newName.trim();
-        store.set("maintenanceItems", state.maintenanceItems); render("gomme");
-      }
+      openSubItemEditModal(item, {
+        delBtnLabel: "Elimina sotto scheda",
+        onRename:(name)=>{ item.name=name; store.set("maintenanceItems", state.maintenanceItems); render("gomme"); },
+        onColorChange:(idx)=>{ item.color=(idx==null?undefined:idx); store.set("maintenanceItems", state.maintenanceItems); render("gomme"); },
+        onDelete:()=>{
+          state.maintenanceItems = state.maintenanceItems.filter(x=>x.id!==item.id);
+          store.set("maintenanceItems", state.maintenanceItems);
+          activeMaintenanceItem = null;
+          render("gomme");
+        }
+      });
     });
     nameRow.appendChild(renameBtn);
     it.appendChild(nameRow);
     it.appendChild(el("div",{style:"font-weight:400;font-size:11px;opacity:.75;margin-top:2px;"}, item.created));
     it.addEventListener("click", ()=>{ activeMaintenanceItem = item.id; render("gomme"); });
+    attachRowDrag(grip, it, ii, state.maintenanceItems, ()=>{ store.set("maintenanceItems", state.maintenanceItems); render("gomme"); });
     list.appendChild(it);
   });
   wrap.appendChild(list);
 
   const detail = el("div",{class:"coll-detail"});
   const current = state.maintenanceItems.find(it=>it.id===activeMaintenanceItem);
-  if(current.type!=="tires"){
-    const delBtn = el("button",{class:"btn danger small"}, "Elimina sotto scheda");
-    delBtn.style.marginBottom="14px";
-    delBtn.addEventListener("click", ()=>{
-      if(!confirm('Eliminare la sotto scheda "'+current.name+'" e tutti i suoi contenuti?')) return;
-      state.maintenanceItems = state.maintenanceItems.filter(it=>it.id!==current.id);
-      store.set("maintenanceItems", state.maintenanceItems);
-      activeMaintenanceItem = null;
-      render("gomme");
-    });
-    detail.appendChild(delBtn);
-  }
   renderMaintenanceItemDetail(detail, current);
   wrap.appendChild(detail);
   main.appendChild(wrap);
@@ -5386,6 +5450,14 @@ function renderFinanceChart(fullHistory){
     // etichetta alla fine della linea, per distinguere subito quale serie è quale
     svg += `<circle cx="${endX.toFixed(1)}" cy="${endY.toFixed(1)}" r="2.6" fill="${s.color}"/>`;
     svg += `<text x="${(endX+6).toFixed(1)}" y="${(endY+3).toFixed(1)}" font-size="9.5" font-weight="700" fill="${s.color}">${s.label}<title>${s.label}</title></text>`;
+    // delta % tra inizio e fine della finestra temporale selezionata (lo stesso filtro del grafico)
+    const firstVal = data[0][s.key]||0, lastVal = data[data.length-1][s.key]||0;
+    const delta = firstVal ? ((lastVal-firstVal)/Math.abs(firstVal))*100 : null;
+    if(delta!=null){
+      const deltaColor = delta>=0 ? "#2F7A3D" : "#B3352A";
+      const deltaStr = (delta>=0?"+":"")+delta.toFixed(1)+"%";
+      svg += `<text x="${(endX+6).toFixed(1)}" y="${(endY+14).toFixed(1)}" font-size="9" font-weight="700" fill="${deltaColor}">${deltaStr}</text>`;
+    }
   });
   // etichette sull'asse X: un tick per ogni mese reale nell'intervallo, compresi gli eventuali mesi
   // senza snapshot, in modo che un mese "saltato" resti visibile come spazio/etichetta sull'asse
@@ -6508,7 +6580,7 @@ function findCustomTab(id){
 }
 async function ensureCustomTabLoaded(tab){
   const storeKey = tab.private ? privKey("custom:"+tab.id) : "custom:"+tab.id;
-  if(!customTabData[tab.id]) customTabData[tab.id] = await store.get(storeKey, []);
+  if(!customTabData[tab.id]) customTabData[tab.id] = migrateSubItemTypes(await store.get(storeKey, []));
   state[storeKey] = customTabData[tab.id];
   return storeKey;
 }
@@ -6525,7 +6597,7 @@ function renderCustomTabButtons(){
   });
 }
 function customTabButton(tab, index, arr){
-  const btn = el("button",{class:"tab custom-tab", "data-tab":"custom:"+tab.id, style:`background:${tab.color}`});
+  const btn = el("button",{class:"tab custom-tab", "data-tab":"custom:"+tab.id, style:`background:${colorForIndex(tab.color)||""}`});
   const grip = el("span",{class:"tab-drag-grip", html:ICON_GRIP, title:"Trascina per riordinare"});
   btn.appendChild(grip);
   const targetKeyFor = ()=> tab.private ? privKey("customTabs") : "customTabs";
@@ -6544,7 +6616,7 @@ function customTabButton(tab, index, arr){
     const targetArr = ()=> tab.private ? state.customTabsPrivate : state.customTabs;
     openTabEditModal({
       getIcon: ()=>tab.icon, setIcon: (k)=>{ tab.icon=k; store.setQuiet(targetKey(), targetArr()); },
-      getColor: ()=>tab.color, setColor: (c)=>{ tab.color=c; btn.style.background=c; store.setQuiet(targetKey(), targetArr()); },
+      getColor: ()=>tab.color, setColor: (idx)=>{ tab.color=idx; btn.style.background=colorForIndex(idx)||""; store.setQuiet(targetKey(), targetArr()); },
       getName: ()=>tab.name, setName: (n)=>{ tab.name=n; store.setQuiet(targetKey(), targetArr()); },
       afterSave: ()=>renderCustomTabButtons(),
       onDelete: ()=>{
@@ -6586,7 +6658,7 @@ function builtinTabHeader(key, fallbackLabel){
   ]);
 }
 const BUILTIN_TABS = {
-  orto: "Orto", viaggio: "Viaggi", grigliate: "Grigliate", gomme: "Gomme", progetti: "Progetti", condivisi: "Condivisi"
+  orto: "Orto", viaggio: "Viaggi", grigliate: "Eventi", gomme: "Manutenzione", progetti: "Progetti", condivisi: "Condivisi"
 };
 function applyHiddenBuiltins(){
   Object.keys(BUILTIN_TABS).forEach(key=>{
@@ -6606,8 +6678,8 @@ function applyBuiltinColors(){
   Object.keys(BUILTIN_TABS).forEach(key=>{
     const btn = document.querySelector('.tab[data-builtin="'+key+'"]');
     if(!btn) return;
-    if(state.builtinColors[key]) btn.style.background = state.builtinColors[key];
-    else btn.style.background = "";
+    const idx = state.builtinColors[key];
+    btn.style.background = (idx!=null) ? (colorForIndex(idx)||"") : "";
   });
 }
 function applyBuiltinIcons(){
@@ -6671,11 +6743,11 @@ function enhanceBuiltinTabs(){
       e.stopPropagation();
       openTabEditModal({
         getIcon: ()=>state.builtinIcons[key]||"", setIcon: (k)=>{ state.builtinIcons[key]=k; store.setQuiet(privKey("builtinIcons"), state.builtinIcons); },
-        getColor: ()=>state.builtinColors[key]||currentTabPalette()[idx%currentTabPalette().length], setColor: (c)=>{ state.builtinColors[key]=c; store.setQuiet(privKey("builtinColors"), state.builtinColors); },
+        getColor: ()=>(state.builtinColors[key]!=null ? state.builtinColors[key] : idx%currentTabPalette().length), setColor: (i)=>{ state.builtinColors[key]=i; store.setQuiet(privKey("builtinColors"), state.builtinColors); },
         getName: ()=>state.builtinLabels[key]||BUILTIN_TABS[key], setName: (n)=>{ state.builtinLabels[key]=n; store.setQuiet(privKey("builtinLabels"), state.builtinLabels); },
         afterSave: ()=>{ applyBuiltinIcons(); applyBuiltinColors(); applyBuiltinLabels(); },
         onResetIcon: state.builtinIcons[key] ? ()=>{ delete state.builtinIcons[key]; store.setQuiet(privKey("builtinIcons"), state.builtinIcons); applyBuiltinIcons(); } : null,
-        onResetColor: state.builtinColors[key] ? ()=>{ delete state.builtinColors[key]; store.setQuiet(privKey("builtinColors"), state.builtinColors); applyBuiltinColors(); } : null,
+        onResetColor: state.builtinColors[key]!=null ? ()=>{ delete state.builtinColors[key]; store.setQuiet(privKey("builtinColors"), state.builtinColors); applyBuiltinColors(); } : null,
         onDelete: ()=>{
           if(confirm('Nascondere la scheda "'+(state.builtinLabels[key]||BUILTIN_TABS[key])+'"? I dati restano salvati e potrai farla ricomparire da "+ Nuova scheda".')){
             state.hiddenBuiltins.push(key);
@@ -6718,12 +6790,12 @@ function openNewTabModal(){
     modal.appendChild(el("div",{class:"field-label"},"Colore"));
     const colorPicker = el("div",{class:"color-picker"});
     const palette = currentTabPalette();
-    let selColor = palette[Math.floor(Math.random()*palette.length)];
-    palette.forEach(c=>{
-      const dot = el("div",{class:"color-choice"+(c===selColor?" selected":""), style:`background:${c}`});
+    let selColorIdx = Math.floor(Math.random()*palette.length);
+    palette.forEach((c,ci)=>{
+      const dot = el("div",{class:"color-choice"+(ci===selColorIdx?" selected":""), style:`background:${c}`});
       dot.addEventListener("click", ()=>{
         colorPicker.querySelectorAll(".color-choice").forEach(d=>d.classList.remove("selected"));
-        dot.classList.add("selected"); selColor=c;
+        dot.classList.add("selected"); selColorIdx=ci;
       });
       colorPicker.appendChild(dot);
     });
@@ -6751,7 +6823,7 @@ function openNewTabModal(){
     createBtn.addEventListener("click", async ()=>{
       if(!nameInput.value.trim()) return;
       const isPrivate = privateRadio.checked;
-      const newTab = { id:"t"+Date.now(), name:nameInput.value.trim(), color:selColor, icon:selIcon, private:isPrivate };
+      const newTab = { id:"t"+Date.now(), name:nameInput.value.trim(), color:selColorIdx, icon:selIcon, private:isPrivate };
       if(isPrivate){
         state.customTabsPrivate.push(newTab);
         await store.set(privKey("customTabs"), state.customTabsPrivate);
@@ -6789,7 +6861,7 @@ function render(tab){
     setActive:(id)=>activeTrip=id, template:TRIP_TEMPLATE, renderDetail:renderTripDetail
   });
   else if(tab==="grigliate") renderCollection(main, {
-    key:"bbqs", tab:"grigliate", title:"Checklist grigliate", titleEl: builtinTabHeader("grigliate","Grigliate"), active:activeBbq,
+    key:"bbqs", tab:"grigliate", title:"Checklist eventi", titleEl: builtinTabHeader("grigliate","Eventi"), active:activeBbq,
     setActive:(id)=>activeBbq=id, template:BBQ_TEMPLATE, renderDetail:renderBbqDetail
   });
   else if(tab==="gomme") renderGomme(main);

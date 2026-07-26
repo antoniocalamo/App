@@ -195,9 +195,10 @@ h1,h2,h3,.display{font-family:'Fraunces',serif;}
 .tab-icon{width:19px; height:19px; flex-shrink:0; opacity:.92;}
 .tab-icon svg{width:100%; height:100%; display:block;}
 .tab-label{
-  display:flex; flex-direction:column; line-height:1.25;
-  min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  font-size:13px; letter-spacing:-0.02em;
+  min-width:0; flex:1;
+  font-size:13px; letter-spacing:-0.02em; line-height:1.25;
+  overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2;
+  word-break:break-word;
 }
 .tab .sub{
   display:block;
@@ -717,14 +718,18 @@ textarea{resize:vertical;}
 }
 .coll-item.dragging{opacity:.5;}
 .coll-item.drag-over{outline:2px dashed var(--forest); outline-offset:-3px;}
-.coll-item-name-row{display:flex; align-items:center; gap:8px;}
-.coll-item-grip{width:11px; height:15px; flex-shrink:0; opacity:.35; cursor:grab; touch-action:none;}
+.coll-item-name-row{display:flex; align-items:flex-start; gap:8px;}
+.coll-item-grip{width:11px; height:15px; flex-shrink:0; opacity:.35; cursor:grab; touch-action:none; margin-top:2px;}
 .coll-item-grip svg{width:100%; height:100%; display:block;}
 .coll-item-grip:hover{opacity:.8;}
 .coll-item.active .coll-item-grip{color:#fff;}
-.coll-item-color-dot{width:9px; height:9px; border-radius:50%; flex-shrink:0; border:1px solid rgba(0,0,0,0.15);}
-.coll-item-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-.coll-item-rename{width:12px; height:12px; flex-shrink:0; opacity:.4; cursor:pointer;}
+.coll-item-color-dot{width:9px; height:9px; border-radius:50%; flex-shrink:0; border:1px solid rgba(0,0,0,0.15); margin-top:5px;}
+.coll-item-name{
+  flex:1; min-width:0;
+  overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2;
+  word-break:break-word;
+}
+.coll-item-rename{width:12px; height:12px; flex-shrink:0; opacity:.4; cursor:pointer; margin-top:3px;}
 .coll-item-rename svg{width:100%; height:100%; display:block;}
 .coll-item-rename:hover{opacity:1;}
 .coll-item.active .coll-item-rename{color:#fff;}
@@ -4580,7 +4585,15 @@ function addOrtoResizeHandles(node, obj, board, onResize){
 
 /* ---------------- COLLECTIONS (trips / bbq) ---------------- */
 function renderCollection(main, opts){
-  const { key, title, active, setActive, template, itemsPath } = opts;
+  const { key, title, setActive, template, itemsPath } = opts;
+  // Se non c'è ancora una sotto-scheda selezionata (prima visita al tab) o quella salvata
+  // non esiste più (es. cancellata), seleziona e mostra automaticamente la prima disponibile
+  // invece di lasciare la scheda vuota.
+  let active = opts.active;
+  if((active==null || !state[key].some(c=>c.id===active)) && state[key].length){
+    active = state[key][0].id;
+    setActive(active);
+  }
   const nounPlural = opts.itemsLabel || "sotto schede salvate";
   const newBtnLabel = opts.newBtnLabel || "+ Nuova sotto-scheda";
   const namePrompt = opts.namePrompt || "Nome della sotto-scheda:";

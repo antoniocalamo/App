@@ -180,6 +180,7 @@ h1,h2,h3,.display{font-family:'Fraunces',serif;}
   cursor:pointer;
   text-align:left;
   padding:12px 10px 12px 14px;
+  min-height:58px;
   border-radius:12px 0 0 12px;
   font-family:'Fraunces',serif;
   font-weight:600;
@@ -198,7 +199,8 @@ h1,h2,h3,.display{font-family:'Fraunces',serif;}
   min-width:0; flex:1;
   font-size:13px; letter-spacing:-0.02em; line-height:1.25;
   overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2;
-  word-break:break-word;
+  hyphens:auto; -webkit-hyphens:auto; -ms-hyphens:auto;
+  overflow-wrap:break-word; word-break:normal;
 }
 .tab .sub{
   display:block;
@@ -825,7 +827,10 @@ table.tires textarea.gomme-cell{
   appearance:none; -webkit-appearance:none; -moz-appearance:none; border:none; border-radius:20px;
   padding:2px 6px; font-size:9.5px; font-weight:700; cursor:pointer; flex-shrink:0; font-family:'Inter',sans-serif;
 }
-.gantt-pill-select.assignee{background:var(--paper-2); color:var(--ink-soft); border:1px solid var(--line); font-weight:600;}
+.gantt-pill-select.assignee{
+  background:var(--paper-2); color:var(--ink-soft); border:1px solid var(--line); font-weight:600;
+  cursor:text; width:76px; box-sizing:border-box; text-overflow:ellipsis; white-space:nowrap; overflow:hidden;
+}
 .gantt-name-input{
   border:none; background:transparent; font-size:12.5px; padding:2px 4px; flex:1; min-width:0;
   color:var(--ink); font-family:'Inter',sans-serif; overflow:hidden; text-overflow:ellipsis;
@@ -869,6 +874,25 @@ table.tires textarea.gomme-cell{
 .project-dash-list-date{margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); flex-shrink:0;}
 .project-dash-list-date.overdue{color:var(--urgent-text, var(--rust)); font-weight:700;}
 .project-dash-empty{font-size:12.5px; color:var(--ink-soft); font-style:italic;}
+.project-table-wrap{margin-top:20px; overflow-x:auto;}
+.project-table{min-width:660px;}
+.project-table-title{font-family:'Fraunces',serif; font-weight:600; font-size:15px; margin-bottom:8px;}
+.project-table-header{
+  display:grid; grid-template-columns: 96px 1fr 92px 100px 100px 56px 130px 26px; gap:8px;
+  padding:0 6px 7px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px;
+  color:var(--ink-soft); border-bottom:1px solid var(--line);
+}
+.project-table-row{
+  display:grid; grid-template-columns: 96px 1fr 92px 100px 100px 56px 130px 26px; gap:8px; align-items:center;
+  padding:6px; border-bottom:1px solid var(--line); font-size:12.5px;
+}
+.project-table-row:hover{background:var(--paper-2);}
+.project-table-date{
+  border:none; background:transparent; font-family:'IBM Plex Mono',monospace; font-size:11px;
+  color:var(--ink); width:100%; padding:2px 0;
+}
+.project-table-date:focus{outline:none; background:var(--card); border-radius:6px;}
+.project-table-pct{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-soft); text-align:right;}
 .gantt-chart-inner{position:relative;}
 .gantt-header{position:relative;}
 .gantt-months{display:flex; height:22px; border-bottom:1px solid var(--line);}
@@ -1350,7 +1374,7 @@ table.tires textarea.gomme-cell{
   }
   .tabs .brand{display:none;}
   .tabs-group-label, #private-group-label{display:none;}
-  .tab{border-radius:10px; padding:9px 12px; white-space:nowrap; flex-shrink:0;}
+  .tab{border-radius:10px; padding:9px 12px; white-space:nowrap; flex-shrink:0; min-height:auto;}
   .tab.active{transform:translateY(-4px);}
   .tab:not(.active):hover{transform:none;}
   .main-wrap{margin:0; border-radius:20px 20px 0 0;}
@@ -1437,7 +1461,7 @@ table.tires textarea.gomme-cell{
     </button>
     <button class="tab custom-tab" data-c="gomme" data-tab="gomme" data-builtin="gomme">
       <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></span>
-      <span class="tab-label"><span class="tab-label-main">Manutenzione</span></span>
+      <span class="tab-label"><span class="tab-label-main">Manuten&shy;zione</span></span>
     </button>
     <button class="tab custom-tab" data-c="progetti" data-tab="progetti" data-builtin="progetti">
       <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h6M7 13h10M7 17h4"/></svg></span>
@@ -1891,7 +1915,7 @@ const store = {
   }
 };
 
-let state = { dashboard:null, orto:null, trips:null, bbqs:null, tires:null, finance:null, sharedBoards:null, customTabs:null, customTabsPrivate:null, hiddenBuiltins:null, taglines:null, dashTitles:null, gommeLayout:null, builtinLabels:null, accountSettings:null, maintenanceItems:null, googleCalendar:null };
+let state = { dashboard:null, orto:null, trips:null, bbqs:null, tires:null, finance:null, sharedBoards:null, customTabs:null, customTabsPrivate:null, hiddenBuiltins:null, taglines:null, dashTitles:null, gommeLayout:null, builtinLabels:null, accountSettings:null, maintenanceItems:null, googleCalendar:null, projectAssignees:null };
 let activeTrip = null, activeBbq = null, activeSharedBoard = null, activeProject = null;
 let activeMaintenanceItem = null;
 let goodThingPick = null;
@@ -2340,11 +2364,14 @@ async function loadAll(){
     migrateColorField(t, "color");
     if(t.status==null) t.status = t.progress>=100 ? "done" : (t.progress>0 ? "doing" : "todo");
     if(t.assignee==null) t.assignee = "";
+    else if(t.assignee==="io") t.assignee = "Io";
+    else if(t.assignee==="moglie") t.assignee = "Moglie";
     if(t.notes==null) t.notes = "";
     if(t.company==null) t.company = "";
     if(t.budget===undefined) t.budget = null;
     if(t.actualCost===undefined) t.actualCost = null;
   }));
+  state.projectAssignees = await store.get("projectAssignees", ["Io","Moglie"]);
   state.customTabs = await store.get("customTabs", []);
   state.customTabs.forEach(t=>migrateColorField(t, "color"));
   state.customTabsPrivate = await store.get(privKey("customTabs"), []);
@@ -2385,8 +2412,6 @@ function showLogin(){
   document.getElementById("login-screen").style.display="flex";
 }
 async function startApp(){
-  document.getElementById("login-screen").style.display="none";
-  document.getElementById("app-root").style.display="flex";
   const greetName = USER_NAMES[currentUser.email] || currentUser.email;
   document.getElementById("user-email").textContent = getGreeting() + ", " + greetName + "!" + (isGuest ? " (guest)" : "");
   await loadAll();
@@ -2402,6 +2427,11 @@ async function startApp(){
   applyBuiltinOrder();
   renderCustomTabButtons();
   render("dashboard");
+  // L'app-root resta nascosto fino a qui: sidebar (ordine/colori/etichette) e contenuto
+  // sono già pronti quando compare, invece di mostrarsi per un istante con l'ordine
+  // "di fabbrica" del markup statico e poi "saltare" a quello personalizzato.
+  document.getElementById("login-screen").style.display="none";
+  document.getElementById("app-root").style.display="flex";
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.querySelector('.tab[data-tab="dashboard"]').classList.add("active");
   // Piccolo ritardo per dare tempo allo script accounts.google.com di caricarsi (è async/defer).
@@ -5059,6 +5089,27 @@ function ganttComputeRange(tasks){
 function ganttSave(project){ store.set("projects", state.projects); }
 function ganttSaveQuiet(project){ store.setQuiet("projects", state.projects); }
 let ganttViewMode = {};
+function ensureAssigneeDatalist(){
+  let dl = document.getElementById("assignee-suggestions");
+  if(!dl){ dl = document.createElement("datalist"); dl.id = "assignee-suggestions"; document.body.appendChild(dl); }
+  dl.innerHTML = "";
+  (state.projectAssignees||[]).forEach(name=> dl.appendChild(el("option",{value:name})));
+}
+function buildAssigneeInput(t, cls, onSaved){
+  ensureAssigneeDatalist();
+  const inp = el("input",{type:"text", class:cls, list:"assignee-suggestions", placeholder:"—", value: t.assignee||""});
+  inp.addEventListener("change", ()=>{
+    const val = inp.value.trim();
+    t.assignee = val;
+    if(val && !state.projectAssignees.some(n=> n.toLowerCase()===val.toLowerCase())){
+      state.projectAssignees.push(val);
+      store.setQuiet("projectAssignees", state.projectAssignees);
+      ensureAssigneeDatalist();
+    }
+    onSaved();
+  });
+  return inp;
+}
 function openProjectTaskModal(project, task, save){
   openModal((modal, close)=>{
     modal.appendChild(el("h3",{}, task.id ? "Modifica attività" : "Nuova attività"));
@@ -5076,10 +5127,7 @@ function openProjectTaskModal(project, task, save){
     statusWrap.appendChild(statusSel);
     const assigneeWrap = el("div",{});
     assigneeWrap.appendChild(el("div",{class:"field-label", style:"margin-top:0;"},"Assegnatario"));
-    const assigneeSel = el("select",{});
-    [["","—"],["io","Io"],["moglie","Moglie"]].forEach(([v,l])=>
-      assigneeSel.appendChild(el("option",{value:v}, l)));
-    assigneeSel.value = task.assignee || "";
+    const assigneeSel = buildAssigneeInput(task, "", ()=>{});
     assigneeWrap.appendChild(assigneeSel);
     statusDoingRow.appendChild(statusWrap); statusDoingRow.appendChild(assigneeWrap);
     modal.appendChild(statusDoingRow);
@@ -5274,6 +5322,105 @@ function renderProjectDashboard(detail, project, tasks, totalPct, totBudget, tot
   lists.appendChild(upcomingCard);
 
   detail.appendChild(lists);
+  renderProjectTable(detail, project, tasks);
+}
+function renderProjectTable(detail, project, tasks){
+  const GROUP_DEFS = [["todo","Da fare"],["doing","In corso"],["done","Fatto"]];
+  const groupsMap = {todo:[], doing:[], done:[]};
+  tasks.forEach(t=> (groupsMap[t.status||"todo"]||groupsMap.todo).push(t));
+  function isGroupCollapsed(status){ return !!(project.data.collapsedGroups && project.data.collapsedGroups[status]); }
+
+  const wrap = el("div",{class:"project-table-wrap"});
+  wrap.appendChild(el("div",{class:"project-table-title"}, "Tutte le attività"));
+  const table = el("div",{class:"project-table"});
+
+  const headerRow = el("div",{class:"project-table-header"});
+  ["Stato","Nome","Assegnatario","Inizio","Fine","Avanz.","Budget / Costo",""].forEach(l=>
+    headerRow.appendChild(el("div",{}, l)));
+  table.appendChild(headerRow);
+
+  GROUP_DEFS.forEach(([status,label])=>{
+    const groupTasks = groupsMap[status];
+    const collapsed = isGroupCollapsed(status);
+
+    const groupRow = el("div",{class:"gantt-group-row", style:"height:32px;"});
+    groupRow.appendChild(el("span",{class:"gantt-group-chevron"+(collapsed?" collapsed":"")}, "▼"));
+    groupRow.appendChild(el("span",{class:"gantt-group-dot "+status}));
+    groupRow.appendChild(el("span",{}, label));
+    groupRow.appendChild(el("span",{class:"gantt-group-count"}, String(groupTasks.length)));
+    groupRow.addEventListener("click", ()=>{
+      if(!project.data.collapsedGroups) project.data.collapsedGroups = {};
+      project.data.collapsedGroups[status] = !project.data.collapsedGroups[status];
+      ganttSaveQuiet(project); render("progetti");
+    });
+    table.appendChild(groupRow);
+    if(collapsed) return;
+
+    groupTasks.forEach(t=>{
+      const row = el("div",{class:"project-table-row"});
+
+      const statusSel = el("select",{class:"gantt-pill-select"});
+      [["todo","Da fare"],["doing","In corso"],["done","Fatto"]].forEach(([v,l])=>
+        statusSel.appendChild(el("option",{value:v}, l)));
+      statusSel.value = t.status||"todo";
+      ganttStatusPillStyle(statusSel);
+      statusSel.addEventListener("change", ()=>{
+        t.status = statusSel.value;
+        t.done = t.status==="done";
+        if(t.status==="done") t.progress = 100;
+        else if(t.status==="todo") t.progress = 0;
+        else if(!t.progress || t.progress===100) t.progress = 50;
+        ganttSave(project); render("progetti");
+      });
+      row.appendChild(statusSel);
+
+      const nameInp = el("input",{type:"text", class:"gantt-name-input"+(t.done?" done":""), value:t.name});
+      nameInp.addEventListener("change", ()=>{
+        t.name = nameInp.value.trim() || t.name;
+        ganttSave(project); render("progetti");
+      });
+      row.appendChild(nameInp);
+
+      const assigneeSel = buildAssigneeInput(t, "gantt-pill-select assignee", ()=>{ ganttSave(project); });
+      row.appendChild(assigneeSel);
+
+      const startInp = el("input",{type:"date", class:"project-table-date", value:t.start});
+      startInp.addEventListener("change", ()=>{
+        if(!startInp.value) return;
+        t.start = startInp.value;
+        if(t.end < t.start) t.end = t.start;
+        ganttSave(project); render("progetti");
+      });
+      row.appendChild(startInp);
+
+      const endInp = el("input",{type:"date", class:"project-table-date", value:t.end});
+      endInp.addEventListener("change", ()=>{
+        if(!endInp.value) return;
+        t.end = endInp.value;
+        if(t.start > t.end) t.start = t.end;
+        ganttSave(project); render("progetti");
+      });
+      row.appendChild(endInp);
+
+      row.appendChild(el("div",{class:"project-table-pct"}, (t.progress||0)+"%"));
+
+      let bLabel = "—";
+      if(t.budget!=null && t.actualCost!=null) bLabel = "€"+fmtEuro(t.budget)+" → €"+fmtEuro(t.actualCost);
+      else if(t.budget!=null) bLabel = "Budget €"+fmtEuro(t.budget);
+      else if(t.actualCost!=null) bLabel = "Speso €"+fmtEuro(t.actualCost);
+      const over = t.budget!=null && t.actualCost!=null && t.actualCost>t.budget;
+      row.appendChild(el("span",{class:"gantt-budget-chip"+(over?" over":"")}, bLabel));
+
+      const moreBtn = el("button",{class:"gantt-row-more-btn", title:"Altri dettagli (note, ditta, colore)"}, "⋯");
+      moreBtn.addEventListener("click", ()=> openProjectTaskModal(project, t, ganttSave));
+      row.appendChild(moreBtn);
+
+      table.appendChild(row);
+    });
+  });
+
+  wrap.appendChild(table);
+  detail.appendChild(wrap);
 }
 function renderProjectDetail(detail, project){
   const tasks = project.data.tasks;
@@ -5417,13 +5564,7 @@ function renderProjectDetail(detail, project){
       labelRow.appendChild(line1);
 
       const line2 = el("div",{class:"gantt-row-line2"});
-      const assigneeSel = el("select",{class:"gantt-pill-select assignee"});
-      [["","—"],["io","Io"],["moglie","Moglie"]].forEach(([v,l])=>
-        assigneeSel.appendChild(el("option",{value:v}, l)));
-      assigneeSel.value = t.assignee||"";
-      assigneeSel.addEventListener("change", ()=>{
-        t.assignee = assigneeSel.value; ganttSave(project);
-      });
+      const assigneeSel = buildAssigneeInput(t, "gantt-pill-select assignee", ()=>{ ganttSave(project); });
       line2.appendChild(assigneeSel);
       if(t.budget!=null || t.actualCost!=null){
         const over = t.budget!=null && t.actualCost!=null && t.actualCost>t.budget;
@@ -7226,7 +7367,7 @@ function builtinTabHeader(key, fallbackLabel){
   ]);
 }
 const BUILTIN_TABS = {
-  orto: "Orto", viaggio: "Viaggi", grigliate: "Eventi", gomme: "Manutenzione", progetti: "Progetti", condivisi: "Condivisi"
+  orto: "Orto", viaggio: "Viaggi", grigliate: "Eventi", gomme: "Manuten\u00ADzione", progetti: "Progetti", condivisi: "Condivisi"
 };
 function applyHiddenBuiltins(){
   Object.keys(BUILTIN_TABS).forEach(key=>{

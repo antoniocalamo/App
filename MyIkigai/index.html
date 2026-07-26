@@ -383,7 +383,7 @@ button{font-family:'Inter',sans-serif;}
   transition: box-shadow .2s ease;
 }
 
-input[type=text], textarea, input[type=date]{
+input[type=text], textarea, input[type=date], input[type=number]{
   font-family:'Inter',sans-serif;
   border:1px solid var(--line);
   border-radius:8px;
@@ -892,7 +892,26 @@ table.tires textarea.gomme-cell{
   color:var(--ink); width:100%; padding:2px 0;
 }
 .project-table-date:focus{outline:none; background:var(--card); border-radius:6px;}
-.project-table-pct{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-soft); text-align:right;}
+.project-table-pct-wrap{display:flex; align-items:center; gap:2px;}
+.project-table-pct-input{
+  width:32px; border:none; background:transparent; font-family:'IBM Plex Mono',monospace;
+  font-size:11px; color:var(--ink); padding:2px 0; text-align:right;
+}
+.project-table-pct-input:focus{outline:none; background:var(--card); border-radius:4px;}
+.project-table-pct-sign{font-size:10px; color:var(--ink-soft); flex-shrink:0;}
+.project-table-money-wrap{display:flex; align-items:center; gap:3px; min-width:0;}
+.project-table-money{
+  width:48px; min-width:0; border:none; background:transparent; font-family:'IBM Plex Mono',monospace;
+  font-size:10px; color:var(--ink); padding:2px 1px;
+}
+.project-table-money:focus{outline:none; background:var(--card); border-radius:4px;}
+.project-table-money::placeholder{color:var(--ink-soft); opacity:.55;}
+.gantt-task-budget-warn{color:var(--urgent-text, var(--rust)); font-size:11px; flex-shrink:0;}
+.project-table-pct-input::-webkit-inner-spin-button, .project-table-pct-input::-webkit-outer-spin-button,
+.project-table-money::-webkit-inner-spin-button, .project-table-money::-webkit-outer-spin-button{
+  -webkit-appearance:none; margin:0;
+}
+.project-table-pct-input, .project-table-money{-moz-appearance:textfield;}
 .gantt-chart-inner{position:relative;}
 .gantt-header{position:relative;}
 .gantt-months{display:flex; height:22px; border-bottom:1px solid var(--line);}
@@ -1061,6 +1080,41 @@ table.tires textarea.gomme-cell{
 /* ---- Finanze: sotto-navigazione ---- */
 .finance-subnav{display:flex; gap:8px; margin-bottom:16px;}
 .finance-subnav-btn.active{background:var(--forest); color:#fff; border-color:var(--forest);}
+.cashflow-cols{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+@media (max-width:700px){ .cashflow-cols{grid-template-columns:1fr;} }
+.cashflow-col{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px;}
+.cashflow-col-title{
+  font-family:'Fraunces',serif; font-weight:600; font-size:15px; margin-bottom:10px;
+  display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+}
+.cashflow-col-total{font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink-soft); flex-shrink:0;}
+.cashflow-item{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13px;}
+.cashflow-item:last-of-type{border-bottom:none;}
+.cashflow-item-cat{font-size:10px; color:var(--ink-soft); background:var(--paper-2); border-radius:6px; padding:1px 6px; flex-shrink:0; white-space:nowrap;}
+.cashflow-item-desc{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.cashflow-item-amt{font-family:'IBM Plex Mono',monospace; font-size:12.5px; flex-shrink:0;}
+.cashflow-item-amt-input{
+  width:64px; flex-shrink:0; border:none; background:transparent; font-family:'IBM Plex Mono',monospace;
+  font-size:11.5px; color:var(--ink); text-align:right; padding:2px;
+}
+.cashflow-item-amt-input:focus{outline:none; background:var(--paper-2); border-radius:4px;}
+.cashflow-freq-select{
+  flex-shrink:0; border:none; background:var(--paper-2); border-radius:6px; font-size:10px;
+  color:var(--ink-soft); padding:2px 4px;
+}
+.cashflow-item-del{cursor:pointer; color:var(--ink-soft); flex-shrink:0; opacity:.5;}
+.cashflow-item-del:hover{color:var(--urgent-text, var(--rust)); opacity:1;}
+.cashflow-add-row{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;}
+.cashflow-add-row .cat{width:84px; flex:none;}
+.cashflow-add-row .desc{flex:1; min-width:100px;}
+.cashflow-add-row input[type=number]{width:90px; flex:none;}
+.cashflow-breakdown-title{font-family:'Fraunces',serif; font-weight:600; font-size:15px; margin:20px 0 10px;}
+.cashflow-breakdown{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px;}
+.cashflow-breakdown-row{display:flex; align-items:center; gap:10px; padding:5px 0; font-size:12.5px;}
+.cashflow-breakdown-label{width:160px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink-soft);}
+.cashflow-breakdown-bar-wrap{flex:1; min-width:0; background:var(--paper-2); border-radius:5px; height:9px; overflow:hidden;}
+.cashflow-breakdown-bar{height:100%; background:var(--teal); border-radius:5px;}
+.cashflow-breakdown-val{width:88px; flex-shrink:0; text-align:right; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft);}
 
 /* ---- Investimenti ---- */
 .invest-actions-row{display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;}
@@ -1274,6 +1328,18 @@ table.tires textarea.gomme-cell{
 .gcal-event-icon svg{width:100%; height:100%; display:block;}
 .gcal-event-time{font-weight:600; color:var(--teal); flex-shrink:0;}
 .gcal-event-title{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.project-day-events{display:flex; flex-direction:column; gap:4px; margin-bottom:6px;}
+.project-day-chip{
+  display:flex; align-items:center; gap:6px; cursor:pointer;
+  background:var(--paper-2); border:1px dashed var(--forest);
+  border-radius:6px; padding:4px 8px;
+  font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft);
+}
+.project-day-chip:hover{background:var(--paper);}
+.project-day-chip-title{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0;}
+.project-day-chip-title.done{text-decoration:line-through; opacity:.6;}
+.project-day-chip-kind{flex-shrink:0; font-style:italic; opacity:.7;}
+.project-day-chip-proj{flex-shrink:0; opacity:.65; font-size:10px;}
 .toggle-completed{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--ink-soft); cursor:pointer;}
 .toggle-completed input{accent-color:var(--forest); width:15px; height:15px;}
 .day-row.today .day-label{
@@ -1533,7 +1599,7 @@ const DEFAULTS = {
   trips: [],
   bbqs: [],
   tires: [],
-  finance: { liquidity: [], nonliquid: [], debts: [], history: [], investments: [], investAutoPriceEnabled: false },
+  finance: { liquidity: [], nonliquid: [], debts: [], history: [], investments: [], investAutoPriceEnabled: false, cashflow:{incomes:[], expenses:[]} },
   sharedBoards: [],
   projects: [],
   weatherLocation: {name:"Milano", lat:45.4642, lon:9.19}
@@ -1668,7 +1734,7 @@ const KPI_CATALOG = {
     } }
 };
 const DEFAULT_KPI_SELECTION = ["monthlyPriorities","ortoWater","ortoFertilize","netWorth"];
-const APP_VERSION = "v0.67";
+const APP_VERSION = "v0.91";
 const ADMIN_EMAIL = "antonio.calamo@gmail.com";
 // Unico punto in cui si decide chi è admin: da qui in poi ogni "potere speciale" riservato
 // all'admin va controllato con isAdmin(), non ripetendo il confronto con ADMIN_EMAIL in giro.
@@ -1915,7 +1981,7 @@ const store = {
   }
 };
 
-let state = { dashboard:null, orto:null, trips:null, bbqs:null, tires:null, finance:null, sharedBoards:null, customTabs:null, customTabsPrivate:null, hiddenBuiltins:null, taglines:null, dashTitles:null, gommeLayout:null, builtinLabels:null, accountSettings:null, maintenanceItems:null, googleCalendar:null, projectAssignees:null };
+let state = { dashboard:null, orto:null, trips:null, bbqs:null, tires:null, finance:null, sharedBoards:null, customTabs:null, customTabsPrivate:null, hiddenBuiltins:null, taglines:null, dashTitles:null, gommeLayout:null, builtinLabels:null, accountSettings:null, maintenanceItems:null, googleCalendar:null, projectAssignees:null, ortoWeatherLocation:null };
 let activeTrip = null, activeBbq = null, activeSharedBoard = null, activeProject = null;
 let activeMaintenanceItem = null;
 let goodThingPick = null;
@@ -2197,6 +2263,29 @@ function buildGcalDayEvents(dateStr){
   });
   return wrap;
 }
+// Chip (modificabili al volo) delle attività di Progetti che iniziano o scadono in questo
+// giorno: mostrato solo su inizio e scadenza (non su ogni giorno intermedio, per non intasare
+// la To Do List). I dati sono già locali, quindi nessuna cache/fetch asincrono è necessaria.
+function buildProjectDayTasks(dateStr){
+  const wrap = el("div",{class:"project-day-events"});
+  const items = [];
+  (state.projects||[]).forEach(project=>{
+    ((project.data&&project.data.tasks)||[]).forEach(t=>{
+      if(t.start===dateStr) items.push({project, task:t, kind:"start"});
+      else if(t.end===dateStr) items.push({project, task:t, kind:"end"});
+    });
+  });
+  items.forEach(({project, task, kind})=>{
+    const chip = el("div",{class:"project-day-chip", title:"Attività di progetto (\""+project.name+"\") · clicca per aprire"});
+    chip.appendChild(el("span",{class:"gantt-group-dot "+(task.status||"todo")}));
+    chip.appendChild(el("span",{class:"project-day-chip-title"+(task.status==="done"?" done":"")}, task.name));
+    if(task.start!==task.end) chip.appendChild(el("span",{class:"project-day-chip-kind"}, kind==="start"?"inizio":"scadenza"));
+    chip.appendChild(el("span",{class:"project-day-chip-proj"}, project.name));
+    chip.addEventListener("click", ()=> openProjectTaskModal(project, task, ganttSave));
+    wrap.appendChild(chip);
+  });
+  return wrap;
+}
 // I colori scelti prima di questa versione erano salvati come esadecimale fisso; qui li
 // convertiamo, una volta sola, nell'indice di palette corrispondente (vedi paletteIndexForColor),
 // così restano armonizzati quando si cambia tema invece di restare fissi.
@@ -2322,12 +2411,16 @@ async function loadAll(){
     store.setQuiet("orto", state.orto);
   }
   state.weatherLocation = await store.get("weatherLocation", DEFAULTS.weatherLocation);
+  // Posizione meteo separata per l'Orto: la prima volta parte allineata a quella di Home
+  // (comportamento precedente), da qui in poi le due si possono scostare liberamente.
+  state.ortoWeatherLocation = await store.get("ortoWeatherLocation", state.weatherLocation);
   state.trips = migrateSubItemTypes(await store.get("trips", DEFAULTS.trips));
   state.bbqs = migrateSubItemTypes(await store.get("bbqs", DEFAULTS.bbqs));
   state.tires = await store.get("tires", DEFAULTS.tires);
   state.maintenanceItems = migrateSubItemTypes(await store.get("maintenanceItems", [{id:"tires", name:"Gomme", type:"tires", created:new Date().toLocaleDateString("it-IT")}]));
   migrateGommeToTable();
   state.finance = await store.get(privKey("finance"), DEFAULTS.finance);
+  if(!state.finance.cashflow || !state.finance.cashflow.incomes){ state.finance.cashflow = {incomes:[], expenses:[]}; }
   if(!state.finance.investments) state.finance.investments = [];
   if(state.finance.investAutoPriceEnabled===undefined) state.finance.investAutoPriceEnabled = false;
   if(state.finance.investments.length){
@@ -2371,7 +2464,14 @@ async function loadAll(){
     if(t.budget===undefined) t.budget = null;
     if(t.actualCost===undefined) t.actualCost = null;
   }));
-  state.projectAssignees = await store.get("projectAssignees", ["Io","Moglie"]);
+  state.projectAssignees = await store.get("projectAssignees", []);
+  // pulizia una tantum: "Io"/"Moglie" erano i valori fissi della versione precedente,
+  // ora sostituiti da suggerimenti a testo libero scelti dall'utente
+  const cleanedAssignees = state.projectAssignees.filter(n=> !["io","moglie"].includes(String(n).trim().toLowerCase()));
+  if(cleanedAssignees.length !== state.projectAssignees.length){
+    state.projectAssignees = cleanedAssignees;
+    store.setQuiet("projectAssignees", state.projectAssignees);
+  }
   state.customTabs = await store.get("customTabs", []);
   state.customTabs.forEach(t=>migrateColorField(t, "color"));
   state.customTabsPrivate = await store.get(privKey("customTabs"), []);
@@ -2904,11 +3004,17 @@ function pastDates(){
   for(let i=1;i<=7;i++) out.push(addDaysISO(new Date(), -i));
   return out;
 }
-function openWeatherLocationModal(){
+function openWeatherLocationModal(opts){
+  opts = opts || {};
+  const stateKey = opts.stateKey || "weatherLocation";
+  const storeKey = opts.storeKey || "weatherLocation";
+  const title = opts.title || "Posizione meteo";
+  const hint = opts.hint || "";
+  const onSaved = opts.onSaved || (()=>{});
   openModal((modal, close)=>{
-    modal.appendChild(el("h3",{},"Posizione meteo"));
-    modal.appendChild(el("div",{class:"field-label"}, "Vale sia per questo widget in Home sia per il meteo nel tab Orto."));
-    const current = state.weatherLocation || DEFAULTS.weatherLocation;
+    modal.appendChild(el("h3",{},title));
+    if(hint) modal.appendChild(el("div",{class:"field-label"}, hint));
+    const current = state[stateKey] || DEFAULTS.weatherLocation;
     modal.appendChild(el("div",{style:"font-size:12.5px;color:var(--ink-soft);margin:6px 0 12px 0;"}, "Attuale: "+current.name));
     const searchRow = el("div",{style:"display:flex;gap:8px;margin-bottom:10px;"});
     const searchInp = el("input",{type:"text", placeholder:"Cerca città…", style:"flex:1;"});
@@ -2934,9 +3040,9 @@ function openWeatherLocationModal(){
           const label = [r.name, r.admin1, r.country].filter(Boolean).join(", ");
           const btn = el("button",{type:"button", class:"weather-loc-result"}, label);
           btn.addEventListener("click", async ()=>{
-            state.weatherLocation = {name:r.name, lat:r.latitude, lon:r.longitude};
-            await store.set("weatherLocation", state.weatherLocation);
-            weatherCache = null; weatherCacheKey = null;
+            state[stateKey] = {name:r.name, lat:r.latitude, lon:r.longitude};
+            await store.set(storeKey, state[stateKey]);
+            onSaved();
             close(); render(currentRenderedTab);
           });
           resultsWrap.appendChild(btn);
@@ -3116,7 +3222,11 @@ function statCard(kpiKey){
     const weatherHead = el("div",{class:"stat-weather-head"});
     const weatherLine = el("div",{class:"stat-weather"}, "meteo…");
     const gearBtn = el("span",{class:"stat-weather-gear", html:ICON_GEAR, title:"Configura posizione meteo"});
-    gearBtn.addEventListener("click",(e)=>{ e.stopPropagation(); openWeatherLocationModal(); });
+    gearBtn.addEventListener("click",(e)=>{ e.stopPropagation(); openWeatherLocationModal({
+      stateKey:"weatherLocation", storeKey:"weatherLocation", title:"Posizione meteo (Home)",
+      hint:"Vale solo per questo widget nella Dashboard, indipendente da quella dell'Orto.",
+      onSaved: ()=>{ weatherCache=null; weatherCacheKey=null; }
+    }); });
     weatherHead.appendChild(weatherLine); weatherHead.appendChild(gearBtn);
     card.appendChild(weatherHead);
     const forecastWrap = el("div",{class:"stat-weather-row"});
@@ -3125,7 +3235,8 @@ function statCard(kpiKey){
     card.appendChild(forecastWrap);
     ensureWeatherLoaded().then(w=>{
       if(!w){ weatherLine.textContent = "meteo non disponibile"; return; }
-      weatherLine.textContent = `oggi: ${w.precipToday}mm · ${w.temp}°C`;
+      const locName = (state.weatherLocation||DEFAULTS.weatherLocation).name;
+      weatherLine.textContent = `${locName} · oggi: ${w.precipToday}mm · ${w.temp}°C`;
       forecastRow.innerHTML = "";
       (w.next7days||[]).forEach(d=>{
         const dayName = new Date(d.date+"T12:00:00").toLocaleDateString("it-IT",{weekday:"short"});
@@ -3276,6 +3387,11 @@ function openAccountSettingsModal(){
     notifyLabel.appendChild(notifyCb);
     notifyLabel.appendChild(document.createTextNode("Voglio ricevere un'email il 27 di ogni mese per ricordarmi di aggiornare la scheda Finanze"));
     modal.appendChild(notifyLabel);
+
+    modal.appendChild(el("div",{class:"field-label", style:"margin-top:18px;"},"Google Calendar"));
+    modal.appendChild(el("div",{style:"font-size:12px; color:var(--ink-soft); margin-bottom:8px;"},
+      "Collega il tuo Google Calendar per vedere i tuoi eventi nella To Do List (sola lettura)."));
+    modal.appendChild(buildGcalStatusButton());
 
     if(isAdmin()){
       modal.appendChild(el("div",{class:"field-label", style:"margin-top:18px;"},"Amministrazione (solo per te)"));
@@ -3463,10 +3579,26 @@ function buildGcalStatusButton(){
   btn.addEventListener("click", connectGoogleCalendar);
   return btn;
 }
+// Toggle "Mostra/nascondi eventi Google" nell'header della To Do List: al contrario del vecchio
+// bottone, non gestisce la connessione (spostata nel pannello impostazioni), solo la visibilità
+// dei chip già mostrati o meno nelle card giorno.
+function buildGcalVisibilityToggle(){
+  const label = el("label",{class:"toggle-completed"});
+  const input = el("input",{type:"checkbox"});
+  input.checked = state.accountSettings.showGcalEvents !== false;
+  input.addEventListener("change", ()=>{
+    state.accountSettings.showGcalEvents = input.checked;
+    store.setQuiet(privKey("accountSettings"), state.accountSettings);
+    render("dashboard");
+  });
+  label.appendChild(input);
+  label.appendChild(document.createTextNode("Mostra eventi Google"));
+  return label;
+}
 function renderDashboard(main){
   const past = pastDates().filter(d => state.dashboard.days[d] && state.dashboard.days[d].length);
   const todoActions = el("div",{class:"todo-header-actions"});
-  const kpiEditBtn = el("button",{class:"btn ghost small"},"Modifica KPI");
+  const kpiEditBtn = el("button",{class:"btn ghost small"},"Modifica widget");
   kpiEditBtn.addEventListener("click", openKpiSettingsModal);
   todoActions.appendChild(kpiEditBtn);
   if(past.length){
@@ -3513,7 +3645,7 @@ function renderDashboard(main){
     render("dashboard");
   });
   todoActions.appendChild(backlogToggleBtn);
-  todoActions.appendChild(buildGcalStatusButton());
+  todoActions.appendChild(buildGcalVisibilityToggle());
 
   const headerWrap = el("div",{class:"dash-header-sticky"});
   const titleRow = el("div",{class:"section-head"});
@@ -3575,7 +3707,8 @@ function buildDayRow(main, dateStr, isToday, isHistory){
   const dayName = weekdayNameFromDate(dateStr);
   const tasks = state.dashboard.days[dateStr];
   const dayCard = el("div",{class:"card day-card"+(isHistory?" day-card-history":""), style:`--day-color:${DAY_COLORS[dayName]}`});
-  if(!isHistory) dayCard.appendChild(buildGcalDayEvents(dateStr));
+  if(!isHistory && state.accountSettings.showGcalEvents!==false) dayCard.appendChild(buildGcalDayEvents(dateStr));
+  if(!isHistory) dayCard.appendChild(buildProjectDayTasks(dateStr));
   tasks.forEach((t,i)=>{
     if(state.dashboard.showCompleted===false && t.done) return;
     dayCard.appendChild(renderTaskBlock(main, dateStr, t, i));
@@ -4536,7 +4669,7 @@ function openNewOrtoObjectModal(){
   });
 }
 async function loadOrtoWeather(container){
-  const loc = state.weatherLocation || DEFAULTS.weatherLocation;
+  const loc = state.ortoWeatherLocation || DEFAULTS.weatherLocation;
   const lat = loc.lat, lon = loc.lon;
   try{
     const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation&daily=precipitation_sum&timezone=auto`);
@@ -4557,6 +4690,12 @@ async function loadOrtoWeather(container){
     const locSlug = ortoLocationSlug(loc.name);
     const forecastLink = el("a",{href:`https://www.3bmeteo.com/meteo/${locSlug}`, target:"_blank", rel:"noopener", class:"weather-link"}, "Previsioni dettagliate ↗");
     weatherLinks.appendChild(forecastLink);
+    const gearBtn = el("span",{class:"stat-weather-gear", html:ICON_GEAR, title:"Configura posizione meteo dell'Orto", style:"width:14px;height:14px;cursor:pointer;"});
+    gearBtn.addEventListener("click", ()=> openWeatherLocationModal({
+      stateKey:"ortoWeatherLocation", storeKey:"ortoWeatherLocation", title:"Posizione meteo (Orto)",
+      hint:"Vale solo per il meteo in questa scheda, indipendente da quella di Home."
+    }));
+    weatherLinks.appendChild(gearBtn);
     container.appendChild(weatherLinks);
   }catch(e){
     container.innerHTML = "";
@@ -5214,7 +5353,7 @@ function openProjectTaskModal(project, task, save){
       const delBtn = el("button",{class:"btn danger small", style:"margin-right:auto;"},"Elimina");
       delBtn.addEventListener("click", ()=>{
         project.data.tasks = project.data.tasks.filter(t=>t.id!==task.id);
-        ganttSave(project); close(); render("progetti");
+        ganttSave(project); close(); render(currentRenderedTab);
       });
       actions.appendChild(delBtn);
     }
@@ -5237,7 +5376,7 @@ function openProjectTaskModal(project, task, save){
       task.notes = notesTa.value.trim();
       task.color = selColorIdx;
       if(!task.id){ task.id = "pt"+Date.now(); project.data.tasks.push(task); }
-      ganttSave(project); close(); render("progetti");
+      ganttSave(project); close(); render(currentRenderedTab);
     });
     actions.appendChild(cancelBtn); actions.appendChild(saveBtn);
     modal.appendChild(actions);
@@ -5402,14 +5541,43 @@ function renderProjectTable(detail, project, tasks){
       });
       row.appendChild(endInp);
 
-      row.appendChild(el("div",{class:"project-table-pct"}, (t.progress||0)+"%"));
+      const pctWrap = el("div",{class:"project-table-pct-wrap"});
+      const pctInp = el("input",{type:"number", min:"0", max:"100", class:"project-table-pct-input", value:String(t.progress||0)});
+      pctInp.addEventListener("change", ()=>{
+        let v = parseInt(pctInp.value,10); if(isNaN(v)) v = 0; v = Math.max(0, Math.min(100, v));
+        t.progress = v; pctInp.value = String(v);
+        if(v>=100) t.status = "done";
+        else if(v<=0) t.status = "todo";
+        else if(t.status==="done" || t.status==="todo") t.status = "doing";
+        t.done = t.status==="done";
+        ganttSave(project); render("progetti");
+      });
+      pctWrap.appendChild(pctInp);
+      pctWrap.appendChild(el("span",{class:"project-table-pct-sign"}, "%"));
+      row.appendChild(pctWrap);
 
-      let bLabel = "—";
-      if(t.budget!=null && t.actualCost!=null) bLabel = "€"+fmtEuro(t.budget)+" → €"+fmtEuro(t.actualCost);
-      else if(t.budget!=null) bLabel = "Budget €"+fmtEuro(t.budget);
-      else if(t.actualCost!=null) bLabel = "Speso €"+fmtEuro(t.actualCost);
-      const over = t.budget!=null && t.actualCost!=null && t.actualCost>t.budget;
-      row.appendChild(el("span",{class:"gantt-budget-chip"+(over?" over":"")}, bLabel));
+      const moneyWrap = el("div",{class:"project-table-money-wrap"});
+      const budgetInp = el("input",{type:"number", step:"0.01", min:"0", class:"project-table-money", placeholder:"Budget",
+        value: t.budget!=null?String(t.budget):""});
+      const costInp = el("input",{type:"number", step:"0.01", min:"0", class:"project-table-money", placeholder:"Speso",
+        value: t.actualCost!=null?String(t.actualCost):""});
+      const warnIcon = el("span",{class:"gantt-task-budget-warn", title:"Costo sopra il budget"}, "⚠");
+      warnIcon.style.display = "none";
+      function refreshMoneyWarn(){
+        const over = t.budget!=null && t.actualCost!=null && t.actualCost>t.budget;
+        warnIcon.style.display = over ? "" : "none";
+      }
+      budgetInp.addEventListener("change", ()=>{
+        t.budget = budgetInp.value.trim()==="" ? null : parseFloat(budgetInp.value);
+        ganttSave(project); refreshMoneyWarn();
+      });
+      costInp.addEventListener("change", ()=>{
+        t.actualCost = costInp.value.trim()==="" ? null : parseFloat(costInp.value);
+        ganttSave(project); refreshMoneyWarn();
+      });
+      refreshMoneyWarn();
+      moneyWrap.appendChild(budgetInp); moneyWrap.appendChild(costInp); moneyWrap.appendChild(warnIcon);
+      row.appendChild(moneyWrap);
 
       const moreBtn = el("button",{class:"gantt-row-more-btn", title:"Altri dettagli (note, ditta, colore)"}, "⋯");
       moreBtn.addEventListener("click", ()=> openProjectTaskModal(project, t, ganttSave));
@@ -6395,13 +6563,14 @@ function renderFinanze(main){
     el("h1",{},"Finanze")
   ]));
   const nav = el("div",{class:"finance-subnav"});
-  [["dashboard","Panoramica"],["investimenti","Investimenti"]].forEach(([key,label])=>{
+  [["dashboard","Panoramica"],["investimenti","Investimenti"],["flussi","Flussi di cassa"]].forEach(([key,label])=>{
     const btn = el("button",{class:"btn ghost small finance-subnav-btn"+(financeSubTab===key?" active":"")}, label);
     btn.addEventListener("click", ()=>{ financeSubTab=key; render("finanze"); });
     nav.appendChild(btn);
   });
   main.appendChild(nav);
   if(financeSubTab==="investimenti") renderFinanzeInvestimenti(main);
+  else if(financeSubTab==="flussi") renderFinanzeCashflow(main);
   else renderFinanzeDashboard(main);
 }
 
@@ -6956,6 +7125,122 @@ function renderFinanzeInvestimenti(main){
   }
 }
 
+function cashflowMonthlyEquivalent(item){
+  return item.frequency==="annual" ? (item.amount||0)/12 : (item.amount||0);
+}
+function cashflowTotals(){
+  const incomes = state.finance.cashflow.incomes||[];
+  const expenses = state.finance.cashflow.expenses||[];
+  const monthlyIncome = incomes.reduce((s,i)=>s+cashflowMonthlyEquivalent(i),0);
+  const monthlyExpense = expenses.reduce((s,i)=>s+cashflowMonthlyEquivalent(i),0);
+  return { monthlyIncome, monthlyExpense, monthlySavings: monthlyIncome-monthlyExpense };
+}
+function renderFinanzeCashflow(main){
+  main.appendChild(el("div",{style:"font-size:12.5px;color:var(--ink-soft);margin-bottom:16px;"},
+    "Voci ricorrenti (entrate e uscite fisse) per stimare il risparmio mensile e annuale — inseriscile una volta, con la loro frequenza."));
+
+  const totals = cashflowTotals();
+  const statsRow = el("div",{class:"stats-row"});
+  const mk = (label, value, colorVar)=>{
+    const c = el("div",{class:"stat-card", style: colorVar?`border-left-color:${colorVar};`:""});
+    c.appendChild(el("div",{class:"stat-value", style: colorVar?`color:${colorVar};`:""}, value));
+    c.appendChild(el("div",{class:"stat-label"}, label));
+    return c;
+  };
+  statsRow.appendChild(mk("Entrate mensili (equiv.)", fmtEUR(totals.monthlyIncome)));
+  statsRow.appendChild(mk("Uscite mensili (equiv.)", fmtEUR(totals.monthlyExpense)));
+  statsRow.appendChild(mk("Risparmio mensile stimato", fmtEUR(totals.monthlySavings), totals.monthlySavings>=0?"var(--forest)":"var(--urgent-text, var(--rust))"));
+  statsRow.appendChild(mk("Risparmio annuale stimato", fmtEUR(totals.monthlySavings*12), totals.monthlySavings>=0?"var(--forest)":"var(--urgent-text, var(--rust))"));
+  main.appendChild(statsRow);
+
+  function buildCol(type, title, placeholder){
+    const key = type==="income" ? "incomes" : "expenses";
+    const col = el("div",{class:"cashflow-col"});
+    const head = el("div",{class:"cashflow-col-title"});
+    head.appendChild(el("span",{}, title));
+    const totalMonthly = type==="income" ? totals.monthlyIncome : totals.monthlyExpense;
+    head.appendChild(el("span",{class:"cashflow-col-total"}, fmtEUR(totalMonthly)+"/mese"));
+    col.appendChild(head);
+    const items = state.finance.cashflow[key]||[];
+    if(!items.length){
+      col.appendChild(el("div",{class:"project-dash-empty"}, "Nessuna voce ricorrente ancora."));
+    }
+    items.slice().sort((a,b)=> cashflowMonthlyEquivalent(b)-cashflowMonthlyEquivalent(a)).forEach(it=>{
+      const row = el("div",{class:"cashflow-item"});
+      if(it.category) row.appendChild(el("span",{class:"cashflow-item-cat"}, it.category));
+      row.appendChild(el("span",{class:"cashflow-item-desc"}, it.desc||"(senza descrizione)"));
+      const freqSel = el("select",{class:"cashflow-freq-select"});
+      [["monthly","/mese"],["annual","/anno"]].forEach(([v,l])=> freqSel.appendChild(el("option",{value:v}, l)));
+      freqSel.value = it.frequency||"monthly";
+      freqSel.addEventListener("change", ()=>{
+        it.frequency = freqSel.value; store.set(privKey("finance"), state.finance); render("finanze");
+      });
+      const amtInp = el("input",{type:"number", step:"0.01", min:"0", class:"cashflow-item-amt-input", value:String(it.amount||0)});
+      amtInp.addEventListener("change", ()=>{
+        const v = parseFloat(amtInp.value); it.amount = isNaN(v)?0:v;
+        store.set(privKey("finance"), state.finance); render("finanze");
+      });
+      row.appendChild(amtInp);
+      row.appendChild(freqSel);
+      const del = el("span",{class:"cashflow-item-del", title:"Elimina"}, "✕");
+      del.addEventListener("click", ()=>{
+        state.finance.cashflow[key] = state.finance.cashflow[key].filter(x=>x.id!==it.id);
+        store.set(privKey("finance"), state.finance); render("finanze");
+      });
+      row.appendChild(del);
+      col.appendChild(row);
+    });
+    const addRow = el("div",{class:"cashflow-add-row"});
+    const catInp = el("input",{type:"text", class:"cat", placeholder:"categoria"});
+    const descInp = el("input",{type:"text", class:"desc", placeholder, enterkeyhint:"done"});
+    const amtInp = el("input",{type:"number", step:"0.01", min:"0", placeholder:"importo €"});
+    const freqSel = el("select",{});
+    [["monthly","al mese"],["annual","all'anno"]].forEach(([v,l])=> freqSel.appendChild(el("option",{value:v}, l)));
+    function addEntry(){
+      const amount = parseFloat(amtInp.value);
+      if(!amount || amount<=0) return;
+      state.finance.cashflow[key].push({
+        id:"cf"+Date.now()+Math.random().toString(36).slice(2,6),
+        type, category:catInp.value.trim(), desc:descInp.value.trim(), amount, frequency:freqSel.value
+      });
+      store.set(privKey("finance"), state.finance); render("finanze");
+    }
+    [catInp, descInp, amtInp].forEach(inp=>{
+      inp.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); addEntry(); } });
+    });
+    addRow.appendChild(catInp); addRow.appendChild(descInp); addRow.appendChild(amtInp); addRow.appendChild(freqSel);
+    const addBtn = el("button",{class:"btn ghost small"}, "+");
+    addBtn.addEventListener("click", addEntry);
+    addRow.appendChild(addBtn);
+    col.appendChild(addRow);
+    return col;
+  }
+  const cols = el("div",{class:"cashflow-cols"});
+  cols.appendChild(buildCol("income","Entrate ricorrenti","es. Stipendio"));
+  cols.appendChild(buildCol("expense","Uscite ricorrenti","es. Affitto, Netflix…"));
+  main.appendChild(cols);
+
+  // "Dove va il denaro": le uscite più pesanti in ordine, per capire dove si concentra la spesa
+  const expenses = state.finance.cashflow.expenses||[];
+  if(expenses.length){
+    main.appendChild(el("div",{class:"cashflow-breakdown-title"}, "Dove va il denaro (uscite mensili equivalenti)"));
+    const breakdown = el("div",{class:"cashflow-breakdown"});
+    const sorted = expenses.slice().sort((a,b)=> cashflowMonthlyEquivalent(b)-cashflowMonthlyEquivalent(a));
+    const maxVal = Math.max(...sorted.map(cashflowMonthlyEquivalent), 1);
+    sorted.forEach(it=>{
+      const val = cashflowMonthlyEquivalent(it);
+      const pct = totals.monthlyExpense>0 ? Math.round((val/totals.monthlyExpense)*100) : 0;
+      const row = el("div",{class:"cashflow-breakdown-row"});
+      row.appendChild(el("div",{class:"cashflow-breakdown-label"}, (it.desc||it.category||"—")+" · "+pct+"%"));
+      const barWrap = el("div",{class:"cashflow-breakdown-bar-wrap"});
+      barWrap.appendChild(el("div",{class:"cashflow-breakdown-bar", style:`width:${Math.max(3,(val/maxVal)*100)}%;`}));
+      row.appendChild(barWrap);
+      row.appendChild(el("div",{class:"cashflow-breakdown-val"}, fmtEUR(val)+"/mese"));
+      breakdown.appendChild(row);
+    });
+    main.appendChild(breakdown);
+  }
+}
 function renderFinanzeDashboard(main){
   const today = new Date();
   const dom = today.getDate();

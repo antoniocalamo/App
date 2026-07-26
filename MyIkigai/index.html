@@ -393,6 +393,14 @@ input[type=text], textarea, input[type=date]{
 }
 textarea{resize:vertical;}
 .note-item textarea, textarea.long-note{min-height:44px;}
+.modal-card select, .modal-card input[type=number]{
+  font-family:'Inter',sans-serif; border:1px solid var(--line); border-radius:8px;
+  padding:7px 10px; font-size:14px; background:var(--card); color:var(--ink); width:100%;
+}
+.field-row-2{display:flex; gap:10px; margin-top:12px;}
+.field-row-2>div{flex:1;}
+.field-hint{font-size:11px; color:var(--ink-soft); margin-top:5px;}
+.field-hint.over{color:var(--urgent-text, var(--rust)); font-weight:600;}
 
 /* ---- Dashboard ---- */
 .dash-grid{
@@ -804,16 +812,63 @@ table.tires textarea.gomme-cell{
 .gantt-head-row{display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:14px;}
 .gantt-progress-summary{font-size:13px; color:var(--ink-soft);}
 .gantt-wrap{display:flex; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--card);}
-.gantt-labels-col{width:180px; flex-shrink:0; border-right:1px solid var(--line); background:var(--card);}
+.gantt-labels-col{width:236px; flex-shrink:0; border-right:1px solid var(--line); background:var(--card);}
 .gantt-labels-header{height:44px; border-bottom:1px solid var(--line);}
 .gantt-label-row{
-  display:flex; align-items:center; padding:0 12px; border-bottom:1px solid var(--line);
-  font-size:12.5px; cursor:pointer; overflow:hidden;
+  display:flex; flex-direction:column; justify-content:center; gap:3px; padding:6px 10px; border-bottom:1px solid var(--line);
+  font-size:12.5px; overflow:hidden;
 }
 .gantt-label-row:hover{background:var(--paper-2);}
-.gantt-task-name{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-.gantt-task-name.done{text-decoration:line-through; color:var(--ink-soft);}
+.gantt-row-line1{display:flex; align-items:center; gap:5px;}
+.gantt-row-line2{display:flex; align-items:center; gap:5px; font-size:10px;}
+.gantt-pill-select{
+  appearance:none; -webkit-appearance:none; -moz-appearance:none; border:none; border-radius:20px;
+  padding:2px 6px; font-size:9.5px; font-weight:700; cursor:pointer; flex-shrink:0; font-family:'Inter',sans-serif;
+}
+.gantt-pill-select.assignee{background:var(--paper-2); color:var(--ink-soft); border:1px solid var(--line); font-weight:600;}
+.gantt-name-input{
+  border:none; background:transparent; font-size:12.5px; padding:2px 4px; flex:1; min-width:0;
+  color:var(--ink); font-family:'Inter',sans-serif; overflow:hidden; text-overflow:ellipsis;
+}
+.gantt-name-input:focus{outline:none; background:var(--card); border-radius:6px;}
+.gantt-name-input.done{text-decoration:line-through; color:var(--ink-soft);}
+.gantt-row-more-btn{
+  border:none; background:transparent; color:var(--ink-soft); cursor:pointer; font-size:14px;
+  padding:0 2px; flex-shrink:0; margin-left:auto; line-height:1;
+}
+.gantt-row-more-btn:hover{color:var(--ink);}
+.gantt-budget-chip{font-size:10px; color:var(--ink-soft); flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.gantt-budget-chip.over{color:var(--urgent-text, var(--rust)); font-weight:700;}
+.gantt-project-budget-summary{font-size:13px; color:var(--ink-soft);}
+.gantt-project-budget-summary.over{color:var(--urgent-text, var(--rust)); font-weight:600;}
 .gantt-scroll{overflow-x:auto; overflow-y:hidden; flex:1; min-width:0;}
+.gantt-group-row{
+  display:flex; align-items:center; gap:7px; padding:0 10px; border-bottom:1px solid var(--line);
+  font-size:11.5px; font-weight:700; color:var(--ink-soft); cursor:pointer; background:var(--paper-2);
+  text-transform:uppercase; letter-spacing:.3px;
+}
+.gantt-group-row:hover{background:var(--paper);}
+.gantt-group-chevron{width:10px; flex-shrink:0; font-size:9px; transition:transform .15s ease; display:inline-block;}
+.gantt-group-chevron.collapsed{transform:rotate(-90deg);}
+.gantt-group-dot{width:7px; height:7px; border-radius:50%; flex-shrink:0;}
+.gantt-group-dot.todo{background:var(--ink-soft); opacity:.45;}
+.gantt-group-dot.doing{background:var(--teal);}
+.gantt-group-dot.done{background:var(--leaf);}
+.gantt-group-count{margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600;}
+.gantt-view-switch{display:flex; gap:6px;}
+.project-status-breakdown{display:flex; gap:12px; margin-top:4px; flex-wrap:wrap;}
+.project-status-breakdown-item{display:flex; align-items:center; gap:5px; font-size:12.5px; color:var(--ink);}
+.project-dash-lists{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px;}
+@media (max-width:700px){ .project-dash-lists{grid-template-columns:1fr;} }
+.project-dash-list-card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
+.project-dash-list-title{font-family:'Fraunces',serif; font-weight:600; font-size:14px; margin-bottom:8px;}
+.project-dash-list-item{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13px; cursor:pointer;}
+.project-dash-list-item:last-child{border-bottom:none;}
+.project-dash-list-item:hover{color:var(--forest);}
+.project-dash-list-name{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.project-dash-list-date{margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); flex-shrink:0;}
+.project-dash-list-date.overdue{color:var(--urgent-text, var(--rust)); font-weight:700;}
+.project-dash-empty{font-size:12.5px; color:var(--ink-soft); font-style:italic;}
 .gantt-chart-inner{position:relative;}
 .gantt-header{position:relative;}
 .gantt-months{display:flex; height:22px; border-bottom:1px solid var(--line);}
@@ -1321,7 +1376,7 @@ table.tires textarea.gomme-cell{
   .modal-card{padding:20px 18px; max-width:calc(100vw - 32px);}
   .login-screen{padding:16px;}
   .zoom-controls{display:none;}
-  .gantt-labels-col{width:120px;}
+  .gantt-labels-col{width:182px;}
 }
 </style>
 </head>
@@ -2281,7 +2336,15 @@ async function loadAll(){
   }
   state.sharedBoards = migrateSubItemTypes(await store.get("sharedBoards", DEFAULTS.sharedBoards));
   state.projects = await store.get("projects", DEFAULTS.projects);
-  state.projects.forEach(p=>((p.data&&p.data.tasks)||[]).forEach(t=>migrateColorField(t, "color")));
+  state.projects.forEach(p=>((p.data&&p.data.tasks)||[]).forEach(t=>{
+    migrateColorField(t, "color");
+    if(t.status==null) t.status = t.progress>=100 ? "done" : (t.progress>0 ? "doing" : "todo");
+    if(t.assignee==null) t.assignee = "";
+    if(t.notes==null) t.notes = "";
+    if(t.company==null) t.company = "";
+    if(t.budget===undefined) t.budget = null;
+    if(t.actualCost===undefined) t.actualCost = null;
+  }));
   state.customTabs = await store.get("customTabs", []);
   state.customTabs.forEach(t=>migrateColorField(t, "color"));
   state.customTabsPrivate = await store.get(privKey("customTabs"), []);
@@ -4963,7 +5026,14 @@ function renderTripDetail(detail, trip){
 
 /* ---------------- Progetti: vista Gantt nativa ---------------- */
 const GANTT_PX_PER_DAY = 28;
-const GANTT_ROW_H = 40;
+const GANTT_ROW_H = 54;
+const GANTT_GROUP_H = 32;
+function ganttStatusPillStyle(sel){
+  const map = { todo:{bg:"var(--paper-2)", fg:"var(--ink-soft)"}, doing:{bg:"var(--teal)", fg:"#fff"}, done:{bg:"var(--leaf)", fg:"#fff"} };
+  const c = map[sel.value]||map.todo;
+  sel.style.background = c.bg; sel.style.color = c.fg;
+}
+function fmtEuro(n){ return (Math.round(n*100)/100) % 1 === 0 ? String(Math.round(n)) : n.toFixed(2); }
 function ganttDateToOffset(dateStr, rangeStart){
   const d = new Date(dateStr+"T00:00:00");
   const diff = Math.round((d - rangeStart) / 86400000);
@@ -4987,28 +5057,95 @@ function ganttComputeRange(tasks){
   return { rangeStart, totalDays };
 }
 function ganttSave(project){ store.set("projects", state.projects); }
+function ganttSaveQuiet(project){ store.setQuiet("projects", state.projects); }
+let ganttViewMode = {};
 function openProjectTaskModal(project, task, save){
   openModal((modal, close)=>{
     modal.appendChild(el("h3",{}, task.id ? "Modifica attività" : "Nuova attività"));
     modal.appendChild(el("div",{class:"field-label"},"Nome"));
     const nameInp = el("input",{type:"text", value:task.name||""});
     modal.appendChild(nameInp);
-    const dateRow = el("div",{style:"display:flex; gap:10px; margin-top:12px;"});
-    const startWrap = el("div",{style:"flex:1;"});
-    startWrap.appendChild(el("div",{class:"field-label"},"Inizio"));
+
+    const statusDoingRow = el("div",{class:"field-row-2"});
+    const statusWrap = el("div",{});
+    statusWrap.appendChild(el("div",{class:"field-label", style:"margin-top:0;"},"Stato"));
+    const statusSel = el("select",{});
+    [["todo","Da fare"],["doing","In corso"],["done","Fatto"]].forEach(([v,l])=>
+      statusSel.appendChild(el("option",{value:v}, l)));
+    statusSel.value = task.status || "todo";
+    statusWrap.appendChild(statusSel);
+    const assigneeWrap = el("div",{});
+    assigneeWrap.appendChild(el("div",{class:"field-label", style:"margin-top:0;"},"Assegnatario"));
+    const assigneeSel = el("select",{});
+    [["","—"],["io","Io"],["moglie","Moglie"]].forEach(([v,l])=>
+      assigneeSel.appendChild(el("option",{value:v}, l)));
+    assigneeSel.value = task.assignee || "";
+    assigneeWrap.appendChild(assigneeSel);
+    statusDoingRow.appendChild(statusWrap); statusDoingRow.appendChild(assigneeWrap);
+    modal.appendChild(statusDoingRow);
+
+    const dateRow = el("div",{class:"field-row-2"});
+    const startWrap = el("div",{});
+    startWrap.appendChild(el("div",{class:"field-label", style:"margin-top:0;"},"Inizio"));
     const startInp = el("input",{type:"date", value:task.start});
     startWrap.appendChild(startInp);
-    const endWrap = el("div",{style:"flex:1;"});
-    endWrap.appendChild(el("div",{class:"field-label"},"Fine"));
+    const endWrap = el("div",{});
+    endWrap.appendChild(el("div",{class:"field-label", style:"margin-top:0;"},"Fine"));
     const endInp = el("input",{type:"date", value:task.end});
     endWrap.appendChild(endInp);
     dateRow.appendChild(startWrap); dateRow.appendChild(endWrap);
     modal.appendChild(dateRow);
+
+    modal.appendChild(el("div",{class:"field-label"},"Ditta ingaggiata"));
+    const companyInp = el("input",{type:"text", value:task.company||"", placeholder:"Es. Idraulico Rossi"});
+    modal.appendChild(companyInp);
+
+    const budgetRow = el("div",{class:"field-row-2"});
+    const budgetWrap = el("div",{});
+    budgetWrap.appendChild(el("div",{class:"field-label", style:"margin-top:0;"},"Budget (€)"));
+    const budgetInp = el("input",{type:"number", step:"0.01", min:"0", value: task.budget!=null?String(task.budget):"", placeholder:"0"});
+    budgetWrap.appendChild(budgetInp);
+    const costWrap = el("div",{});
+    costWrap.appendChild(el("div",{class:"field-label", style:"margin-top:0;"},"Costo effettivo (€)"));
+    const costInp = el("input",{type:"number", step:"0.01", min:"0", value: task.actualCost!=null?String(task.actualCost):"", placeholder:"0"});
+    costWrap.appendChild(costInp);
+    budgetRow.appendChild(budgetWrap); budgetRow.appendChild(costWrap);
+    modal.appendChild(budgetRow);
+    const budgetHint = el("div",{class:"field-hint"});
+    modal.appendChild(budgetHint);
+    function refreshBudgetHint(){
+      const b = parseFloat(budgetInp.value), c = parseFloat(costInp.value);
+      if(!isNaN(b) && !isNaN(c)){
+        const delta = c - b;
+        budgetHint.className = "field-hint"+(delta>0?" over":"");
+        budgetHint.textContent = delta>0
+          ? ("Sforamento di €"+delta.toFixed(2)+" rispetto al budget")
+          : ("Entro budget (margine €"+Math.abs(delta).toFixed(2)+")");
+      } else {
+        budgetHint.className = "field-hint"; budgetHint.textContent = "";
+      }
+    }
+    budgetInp.addEventListener("input", refreshBudgetHint);
+    costInp.addEventListener("input", refreshBudgetHint);
+    refreshBudgetHint();
+
+    modal.appendChild(el("div",{class:"field-label"},"Note"));
+    const notesTa = el("textarea",{rows:"3", placeholder:"Dettagli, contatti, promemoria…"});
+    notesTa.value = task.notes||"";
+    modal.appendChild(notesTa);
+
     modal.appendChild(el("div",{class:"field-label"},"Avanzamento ("+ (task.progress||0) +"%)"));
     const progRow = el("div",{style:"display:flex; align-items:center; gap:10px;"});
     const progInp = el("input",{type:"range", min:"0", max:"100", step:"5", value:String(task.progress||0), style:"flex:1;"});
     const progLabel = el("span",{style:"font-size:12px; font-family:'IBM Plex Mono',monospace; width:36px; text-align:right;"}, (task.progress||0)+"%");
-    progInp.addEventListener("input", ()=>{ progLabel.textContent = progInp.value+"%"; });
+    progInp.addEventListener("input", ()=>{
+      progLabel.textContent = progInp.value+"%";
+      if(parseInt(progInp.value,10)>=100) statusSel.value = "done";
+      else if(statusSel.value==="done") statusSel.value = parseInt(progInp.value,10)>0 ? "doing" : "todo";
+    });
+    statusSel.addEventListener("change", ()=>{
+      if(statusSel.value==="done"){ progInp.value = "100"; progLabel.textContent = "100%"; }
+    });
     progRow.appendChild(progInp); progRow.appendChild(progLabel);
     modal.appendChild(progRow);
     modal.appendChild(el("div",{class:"field-label"},"Colore"));
@@ -5043,7 +5180,13 @@ function openProjectTaskModal(project, task, save){
       task.name = nameInp.value.trim();
       task.start = s; task.end = e;
       task.progress = parseInt(progInp.value,10)||0;
-      task.done = task.progress >= 100;
+      task.status = statusSel.value;
+      task.done = task.status === "done";
+      task.assignee = assigneeSel.value;
+      task.company = companyInp.value.trim();
+      task.budget = budgetInp.value.trim()==="" ? null : parseFloat(budgetInp.value);
+      task.actualCost = costInp.value.trim()==="" ? null : parseFloat(costInp.value);
+      task.notes = notesTa.value.trim();
       task.color = selColorIdx;
       if(!task.id){ task.id = "pt"+Date.now(); project.data.tasks.push(task); }
       ganttSave(project); close(); render("progetti");
@@ -5053,13 +5196,104 @@ function openProjectTaskModal(project, task, save){
     nameInp.focus();
   });
 }
+function renderProjectDashboard(detail, project, tasks, totalPct, totBudget, totCost, hasMoneyData){
+  const todayIso = isoDate(new Date());
+  const statusCounts = { todo:0, doing:0, done:0 };
+  tasks.forEach(t=> statusCounts[t.status||"todo"]++);
+  const overdue = tasks.filter(t=> t.status!=="done" && t.end && t.end < todayIso)
+    .sort((a,b)=> a.end < b.end ? -1 : 1);
+  const upcoming = tasks.filter(t=> t.status!=="done" && t.end && t.end >= todayIso)
+    .sort((a,b)=> a.end < b.end ? -1 : 1).slice(0,5);
+
+  const statsRow = el("div",{class:"stats-row"});
+
+  const c1 = el("div",{class:"stat-card"});
+  c1.appendChild(el("div",{class:"stat-value"}, totalPct+"%"));
+  c1.appendChild(el("div",{class:"stat-label"}, "Avanzamento medio · "+tasks.length+(tasks.length===1?" attività":" attività")));
+  statsRow.appendChild(c1);
+
+  const c2 = el("div",{class:"stat-card"});
+  c2.appendChild(el("div",{class:"stat-value"}, String(tasks.length)));
+  const breakdown = el("div",{class:"project-status-breakdown"});
+  [["todo","Da fare"],["doing","In corso"],["done","Fatto"]].forEach(([status,label])=>{
+    const item = el("div",{class:"project-status-breakdown-item"});
+    item.appendChild(el("span",{class:"gantt-group-dot "+status}));
+    item.appendChild(el("span",{}, label+" "+statusCounts[status]));
+    breakdown.appendChild(item);
+  });
+  c2.appendChild(breakdown);
+  c2.appendChild(el("div",{class:"stat-label"}, "Attività per stato"));
+  statsRow.appendChild(c2);
+
+  const c3 = el("div",{class:"stat-card", style: overdue.length ? "border-left-color:var(--urgent-text, var(--rust));" : ""});
+  c3.appendChild(el("div",{class:"stat-value", style: overdue.length ? "color:var(--urgent-text, var(--rust));" : ""}, String(overdue.length)));
+  c3.appendChild(el("div",{class:"stat-label"}, "Attività in ritardo"));
+  statsRow.appendChild(c3);
+
+  if(hasMoneyData){
+    const over = totCost>totBudget;
+    const c4 = el("div",{class:"stat-card", style: over ? "border-left-color:var(--urgent-text, var(--rust));" : ""});
+    c4.appendChild(el("div",{class:"stat-value", style: over ? "color:var(--urgent-text, var(--rust));" : ""}, "€"+fmtEuro(totCost)+" / €"+fmtEuro(totBudget)));
+    c4.appendChild(el("div",{class:"stat-label"}, "Speso su budget totale"));
+    statsRow.appendChild(c4);
+  }
+  detail.appendChild(statsRow);
+
+  const lists = el("div",{class:"project-dash-lists"});
+
+  const overdueCard = el("div",{class:"project-dash-list-card"});
+  overdueCard.appendChild(el("div",{class:"project-dash-list-title"}, "⚠ In ritardo"));
+  if(!overdue.length){
+    overdueCard.appendChild(el("div",{class:"project-dash-empty"}, "Nessuna attività in ritardo 🎉"));
+  } else {
+    overdue.forEach(t=>{
+      const row = el("div",{class:"project-dash-list-item"});
+      row.appendChild(el("span",{class:"gantt-group-dot "+(t.status||"todo")}));
+      row.appendChild(el("span",{class:"project-dash-list-name"}, t.name));
+      row.appendChild(el("span",{class:"project-dash-list-date overdue"}, fmtDateShort(t.end)));
+      row.addEventListener("click", ()=> openProjectTaskModal(project, t, ganttSave));
+      overdueCard.appendChild(row);
+    });
+  }
+  lists.appendChild(overdueCard);
+
+  const upcomingCard = el("div",{class:"project-dash-list-card"});
+  upcomingCard.appendChild(el("div",{class:"project-dash-list-title"}, "🗓 Prossime scadenze"));
+  if(!upcoming.length){
+    upcomingCard.appendChild(el("div",{class:"project-dash-empty"}, "Nessuna scadenza imminente."));
+  } else {
+    upcoming.forEach(t=>{
+      const row = el("div",{class:"project-dash-list-item"});
+      row.appendChild(el("span",{class:"gantt-group-dot "+(t.status||"todo")}));
+      row.appendChild(el("span",{class:"project-dash-list-name"}, t.name));
+      row.appendChild(el("span",{class:"project-dash-list-date"}, fmtDateShort(t.end)));
+      row.addEventListener("click", ()=> openProjectTaskModal(project, t, ganttSave));
+      upcomingCard.appendChild(row);
+    });
+  }
+  lists.appendChild(upcomingCard);
+
+  detail.appendChild(lists);
+}
 function renderProjectDetail(detail, project){
   const tasks = project.data.tasks;
   const totalPct = tasks.length ? Math.round(tasks.reduce((s,t)=>s+(t.progress||0),0)/tasks.length) : 0;
 
+  const totBudget = tasks.reduce((s,t)=> s + (t.budget!=null ? t.budget : 0), 0);
+  const totCost = tasks.reduce((s,t)=> s + (t.actualCost!=null ? t.actualCost : 0), 0);
+  const hasMoneyData = tasks.some(t=> t.budget!=null || t.actualCost!=null);
+
+  if(!ganttViewMode[project.id]) ganttViewMode[project.id] = "dashboard";
+  const mode = ganttViewMode[project.id];
+
   const head = el("div",{class:"gantt-head-row"});
-  head.appendChild(el("div",{class:"gantt-progress-summary"},
-    tasks.length ? ("Avanzamento medio: "+totalPct+"% su "+tasks.length+(tasks.length===1?" attività":" attività")) : "Nessuna attività ancora."));
+  const viewSwitch = el("div",{class:"gantt-view-switch"});
+  const dashBtn = el("button",{class:"btn small"+(mode==="dashboard"?" primary":"")}, "📊 Dashboard");
+  const timelineBtn = el("button",{class:"btn small"+(mode==="timeline"?" primary":"")}, "📅 Timeline");
+  dashBtn.addEventListener("click", ()=>{ ganttViewMode[project.id]="dashboard"; render("progetti"); });
+  timelineBtn.addEventListener("click", ()=>{ ganttViewMode[project.id]="timeline"; render("progetti"); });
+  viewSwitch.appendChild(dashBtn); viewSwitch.appendChild(timelineBtn);
+  head.appendChild(viewSwitch);
   const addBtn = el("button",{class:"btn primary small"}, "+ Nuova attività");
   addBtn.addEventListener("click", ()=>{
     const todayIso = isoDate(new Date());
@@ -5070,6 +5304,11 @@ function renderProjectDetail(detail, project){
 
   if(!tasks.length){
     detail.appendChild(emptyState("Aggiungi la prima attività per iniziare a costruire il piano.", ICON_CHECK));
+    return;
+  }
+
+  if(mode==="dashboard"){
+    renderProjectDashboard(detail, project, tasks, totalPct, totBudget, totCost, hasMoneyData);
     return;
   }
 
@@ -5105,110 +5344,189 @@ function renderProjectDetail(detail, project){
   headerRow.appendChild(monthsRow); headerRow.appendChild(daysRow);
   chartInner.appendChild(headerRow);
 
-  const bodyWrap = el("div",{class:"gantt-body", style:`width:${chartWidth}px; height:${tasks.length*GANTT_ROW_H}px;`});
+  const GROUP_DEFS = [["todo","Da fare"],["doing","In corso"],["done","Fatto"]];
+  const groupsMap = {todo:[], doing:[], done:[]};
+  tasks.forEach(t=> (groupsMap[t.status||"todo"]||groupsMap.todo).push(t));
+  function isGroupCollapsed(status){ return !!(project.data.collapsedGroups && project.data.collapsedGroups[status]); }
+
+  let totalHeight = 0;
+  GROUP_DEFS.forEach(([status])=>{
+    totalHeight += GANTT_GROUP_H;
+    if(!isGroupCollapsed(status)) totalHeight += groupsMap[status].length*GANTT_ROW_H;
+  });
+
+  const bodyWrap = el("div",{class:"gantt-body", style:`width:${chartWidth}px; height:${totalHeight}px;`});
   // linea "oggi"
   if(todayOffset >= 0 && todayOffset <= totalDays){
-    bodyWrap.appendChild(el("div",{class:"gantt-today-line", style:`left:${todayOffset*GANTT_PX_PER_DAY}px; height:${tasks.length*GANTT_ROW_H}px;`}));
+    bodyWrap.appendChild(el("div",{class:"gantt-today-line", style:`left:${todayOffset*GANTT_PX_PER_DAY}px; height:${totalHeight}px;`}));
   }
   chartInner.appendChild(bodyWrap);
   scrollArea.appendChild(chartInner);
 
-  tasks.forEach((t,i)=>{
-    // riga etichetta
-    const labelRow = el("div",{class:"gantt-label-row", style:`height:${GANTT_ROW_H}px;`});
-    const nameSpan = el("span",{class:"gantt-task-name"+(t.done?" done":"")}, t.name);
-    labelRow.appendChild(nameSpan);
-    labelRow.addEventListener("click", ()=> openProjectTaskModal(project, t, ganttSave));
-    labelsCol.appendChild(labelRow);
+  let yOffset = 0;
+  GROUP_DEFS.forEach(([status,label])=>{
+    const groupTasks = groupsMap[status];
+    const collapsed = isGroupCollapsed(status);
 
-    // barra
-    const startOff = ganttDateToOffset(t.start, rangeStart);
-    const endOff = ganttDateToOffset(t.end, rangeStart);
-    const durDays = Math.max(1, endOff-startOff+1);
-    const bar = el("div",{class:"gantt-bar"+(t.done?" done":""), style:
-      `left:${startOff*GANTT_PX_PER_DAY}px; top:${i*GANTT_ROW_H+7}px; width:${durDays*GANTT_PX_PER_DAY - 4}px; background:${colorForIndex(t.color)||"var(--forest)"};`});
-    const fill = el("div",{class:"gantt-bar-fill", style:`width:${Math.min(100,t.progress||0)}%;`});
-    bar.appendChild(fill);
-    bar.appendChild(el("span",{class:"gantt-bar-label"}, t.name));
-    const leftHandle = el("span",{class:"gantt-handle gantt-handle-l"});
-    const rightHandle = el("span",{class:"gantt-handle gantt-handle-r"});
-    bar.appendChild(leftHandle); bar.appendChild(rightHandle);
-    bodyWrap.appendChild(bar);
+    // intestazione di sezione (comprimibile)
+    const groupRow = el("div",{class:"gantt-group-row", style:`height:${GANTT_GROUP_H}px;`});
+    groupRow.appendChild(el("span",{class:"gantt-group-chevron"+(collapsed?" collapsed":"")}, "▼"));
+    groupRow.appendChild(el("span",{class:"gantt-group-dot "+status}));
+    groupRow.appendChild(el("span",{}, label));
+    groupRow.appendChild(el("span",{class:"gantt-group-count"}, String(groupTasks.length)));
+    groupRow.addEventListener("click", ()=>{
+      if(!project.data.collapsedGroups) project.data.collapsedGroups = {};
+      project.data.collapsedGroups[status] = !project.data.collapsedGroups[status];
+      ganttSaveQuiet(project); render("progetti");
+    });
+    labelsCol.appendChild(groupRow);
+    yOffset += GANTT_GROUP_H;
+    if(collapsed) return;
 
-    let dragMoved = false;
-    // trascinamento dell'intera barra (sposta inizio e fine mantenendo la durata)
-    bar.addEventListener("pointerdown",(e)=>{
-      if(e.target===leftHandle || e.target===rightHandle) return;
-      e.preventDefault();
-      bar.setPointerCapture(e.pointerId);
-      const startX = e.clientX;
-      dragMoved = false;
-      function move(ev){
-        const deltaPx = ev.clientX - startX;
-        if(Math.abs(deltaPx) > 4) dragMoved = true;
-        const deltaDays = Math.round(deltaPx / GANTT_PX_PER_DAY);
-        bar.style.left = ((startOff+deltaDays)*GANTT_PX_PER_DAY)+"px";
-        bar._pendingDelta = deltaDays;
+    groupTasks.forEach((t)=>{
+      const rowTop = yOffset;
+      // riga etichetta
+      const labelRow = el("div",{class:"gantt-label-row", style:`height:${GANTT_ROW_H}px;`});
+
+      const line1 = el("div",{class:"gantt-row-line1"});
+      const statusSel = el("select",{class:"gantt-pill-select"});
+      [["todo","Da fare"],["doing","In corso"],["done","Fatto"]].forEach(([v,l])=>
+        statusSel.appendChild(el("option",{value:v}, l)));
+      statusSel.value = t.status||"todo";
+      ganttStatusPillStyle(statusSel);
+      statusSel.addEventListener("change", ()=>{
+        t.status = statusSel.value;
+        t.done = t.status==="done";
+        if(t.status==="done") t.progress = 100;
+        else if(t.status==="todo") t.progress = 0;
+        else if(!t.progress || t.progress===100) t.progress = 50;
+        ganttSave(project); render("progetti");
+      });
+      line1.appendChild(statusSel);
+
+      const nameInp = el("input",{type:"text", class:"gantt-name-input"+(t.done?" done":""), value:t.name});
+      nameInp.addEventListener("change", ()=>{
+        t.name = nameInp.value.trim() || t.name;
+        ganttSave(project); render("progetti");
+      });
+      line1.appendChild(nameInp);
+
+      const moreBtn = el("button",{class:"gantt-row-more-btn", title:"Altri dettagli (note, ditta, budget, colore)"}, "⋯");
+      moreBtn.addEventListener("click", ()=> openProjectTaskModal(project, t, ganttSave));
+      line1.appendChild(moreBtn);
+      labelRow.appendChild(line1);
+
+      const line2 = el("div",{class:"gantt-row-line2"});
+      const assigneeSel = el("select",{class:"gantt-pill-select assignee"});
+      [["","—"],["io","Io"],["moglie","Moglie"]].forEach(([v,l])=>
+        assigneeSel.appendChild(el("option",{value:v}, l)));
+      assigneeSel.value = t.assignee||"";
+      assigneeSel.addEventListener("change", ()=>{
+        t.assignee = assigneeSel.value; ganttSave(project);
+      });
+      line2.appendChild(assigneeSel);
+      if(t.budget!=null || t.actualCost!=null){
+        const over = t.budget!=null && t.actualCost!=null && t.actualCost>t.budget;
+        let bLabel;
+        if(t.budget!=null && t.actualCost!=null) bLabel = "€"+fmtEuro(t.budget)+" → €"+fmtEuro(t.actualCost);
+        else if(t.budget!=null) bLabel = "Budget €"+fmtEuro(t.budget);
+        else bLabel = "Speso €"+fmtEuro(t.actualCost);
+        line2.appendChild(el("span",{class:"gantt-budget-chip"+(over?" over":""), title: over?"Costo sopra il budget":""}, bLabel));
       }
-      function up(){
-        bar.removeEventListener("pointermove", move);
-        bar.removeEventListener("pointerup", up);
-        const deltaDays = bar._pendingDelta||0;
-        if(deltaDays!==0){
-          t.start = ganttOffsetToDate(startOff+deltaDays, rangeStart);
-          t.end = ganttOffsetToDate(endOff+deltaDays, rangeStart);
-          ganttSave(project);
+      labelRow.appendChild(line2);
+      labelsCol.appendChild(labelRow);
+
+      // barra
+      const startOff = ganttDateToOffset(t.start, rangeStart);
+      const endOff = ganttDateToOffset(t.end, rangeStart);
+      const durDays = Math.max(1, endOff-startOff+1);
+      const bar = el("div",{class:"gantt-bar"+(t.done?" done":""), style:
+        `left:${startOff*GANTT_PX_PER_DAY}px; top:${rowTop + Math.round((GANTT_ROW_H-26)/2)}px; width:${durDays*GANTT_PX_PER_DAY - 4}px; background:${colorForIndex(t.color)||"var(--forest)"};`});
+      const fill = el("div",{class:"gantt-bar-fill", style:`width:${Math.min(100,t.progress||0)}%;`});
+      bar.appendChild(fill);
+      bar.appendChild(el("span",{class:"gantt-bar-label"}, t.name));
+      const leftHandle = el("span",{class:"gantt-handle gantt-handle-l"});
+      const rightHandle = el("span",{class:"gantt-handle gantt-handle-r"});
+      bar.appendChild(leftHandle); bar.appendChild(rightHandle);
+      bodyWrap.appendChild(bar);
+
+      let dragMoved = false;
+      // trascinamento dell'intera barra (sposta inizio e fine mantenendo la durata)
+      bar.addEventListener("pointerdown",(e)=>{
+        if(e.target===leftHandle || e.target===rightHandle) return;
+        e.preventDefault();
+        bar.setPointerCapture(e.pointerId);
+        const startX = e.clientX;
+        dragMoved = false;
+        function move(ev){
+          const deltaPx = ev.clientX - startX;
+          if(Math.abs(deltaPx) > 4) dragMoved = true;
+          const deltaDays = Math.round(deltaPx / GANTT_PX_PER_DAY);
+          bar.style.left = ((startOff+deltaDays)*GANTT_PX_PER_DAY)+"px";
+          bar._pendingDelta = deltaDays;
         }
-        if(!dragMoved){ openProjectTaskModal(project, t, ganttSave); }
-        else { render("progetti"); }
-      }
-      bar.addEventListener("pointermove", move);
-      bar.addEventListener("pointerup", up);
-    });
-    // ridimensiona da sinistra: cambia data inizio
-    leftHandle.addEventListener("pointerdown",(e)=>{
-      e.preventDefault(); e.stopPropagation();
-      leftHandle.setPointerCapture(e.pointerId);
-      const startX = e.clientX;
-      function move(ev){
-        const deltaDays = Math.round((ev.clientX-startX)/GANTT_PX_PER_DAY);
-        const newStartOff = Math.min(endOff, startOff+deltaDays);
-        bar.style.left = (newStartOff*GANTT_PX_PER_DAY)+"px";
-        bar.style.width = ((endOff-newStartOff+1)*GANTT_PX_PER_DAY-4)+"px";
-        bar._pendingStartOff = newStartOff;
-      }
-      function up(){
-        leftHandle.removeEventListener("pointermove", move);
-        leftHandle.removeEventListener("pointerup", up);
-        if(bar._pendingStartOff!=null){
-          t.start = ganttOffsetToDate(bar._pendingStartOff, rangeStart);
-          ganttSave(project); render("progetti");
+        function up(){
+          bar.removeEventListener("pointermove", move);
+          bar.removeEventListener("pointerup", up);
+          const deltaDays = bar._pendingDelta||0;
+          if(deltaDays!==0){
+            t.start = ganttOffsetToDate(startOff+deltaDays, rangeStart);
+            t.end = ganttOffsetToDate(endOff+deltaDays, rangeStart);
+            ganttSave(project);
+          }
+          if(!dragMoved){ openProjectTaskModal(project, t, ganttSave); }
+          else { render("progetti"); }
         }
-      }
-      leftHandle.addEventListener("pointermove", move);
-      leftHandle.addEventListener("pointerup", up);
-    });
-    // ridimensiona da destra: cambia data fine
-    rightHandle.addEventListener("pointerdown",(e)=>{
-      e.preventDefault(); e.stopPropagation();
-      rightHandle.setPointerCapture(e.pointerId);
-      const startX = e.clientX;
-      function move(ev){
-        const deltaDays = Math.round((ev.clientX-startX)/GANTT_PX_PER_DAY);
-        const newEndOff = Math.max(startOff, endOff+deltaDays);
-        bar.style.width = ((newEndOff-startOff+1)*GANTT_PX_PER_DAY-4)+"px";
-        bar._pendingEndOff = newEndOff;
-      }
-      function up(){
-        rightHandle.removeEventListener("pointermove", move);
-        rightHandle.removeEventListener("pointerup", up);
-        if(bar._pendingEndOff!=null){
-          t.end = ganttOffsetToDate(bar._pendingEndOff, rangeStart);
-          ganttSave(project); render("progetti");
+        bar.addEventListener("pointermove", move);
+        bar.addEventListener("pointerup", up);
+      });
+      // ridimensiona da sinistra: cambia data inizio
+      leftHandle.addEventListener("pointerdown",(e)=>{
+        e.preventDefault(); e.stopPropagation();
+        leftHandle.setPointerCapture(e.pointerId);
+        const startX = e.clientX;
+        function move(ev){
+          const deltaDays = Math.round((ev.clientX-startX)/GANTT_PX_PER_DAY);
+          const newStartOff = Math.min(endOff, startOff+deltaDays);
+          bar.style.left = (newStartOff*GANTT_PX_PER_DAY)+"px";
+          bar.style.width = ((endOff-newStartOff+1)*GANTT_PX_PER_DAY-4)+"px";
+          bar._pendingStartOff = newStartOff;
         }
-      }
-      rightHandle.addEventListener("pointermove", move);
-      rightHandle.addEventListener("pointerup", up);
+        function up(){
+          leftHandle.removeEventListener("pointermove", move);
+          leftHandle.removeEventListener("pointerup", up);
+          if(bar._pendingStartOff!=null){
+            t.start = ganttOffsetToDate(bar._pendingStartOff, rangeStart);
+            ganttSave(project); render("progetti");
+          }
+        }
+        leftHandle.addEventListener("pointermove", move);
+        leftHandle.addEventListener("pointerup", up);
+      });
+      // ridimensiona da destra: cambia data fine
+      rightHandle.addEventListener("pointerdown",(e)=>{
+        e.preventDefault(); e.stopPropagation();
+        rightHandle.setPointerCapture(e.pointerId);
+        const startX = e.clientX;
+        function move(ev){
+          const deltaDays = Math.round((ev.clientX-startX)/GANTT_PX_PER_DAY);
+          const newEndOff = Math.max(startOff, endOff+deltaDays);
+          bar.style.width = ((newEndOff-startOff+1)*GANTT_PX_PER_DAY-4)+"px";
+          bar._pendingEndOff = newEndOff;
+        }
+        function up(){
+          rightHandle.removeEventListener("pointermove", move);
+          rightHandle.removeEventListener("pointerup", up);
+          if(bar._pendingEndOff!=null){
+            t.end = ganttOffsetToDate(bar._pendingEndOff, rangeStart);
+            ganttSave(project); render("progetti");
+          }
+        }
+        rightHandle.addEventListener("pointermove", move);
+        rightHandle.addEventListener("pointerup", up);
+      });
+
+      yOffset += GANTT_ROW_H;
     });
   });
 

@@ -7949,8 +7949,11 @@ function repositionMobileNavForViewport(){
   if(!bar) return;
   const isMobile = window.matchMedia("(max-width:880px)").matches;
   if(!isMobile || !window.visualViewport){
-    bar.style.top = ""; bar.style.bottom = "";
-    if(sheet){ sheet.style.top = ""; sheet.style.height = ""; sheet.style.bottom = ""; }
+    bar.style.top = ""; bar.style.bottom = ""; bar.style.left = ""; bar.style.width = ""; bar.style.right = "";
+    if(sheet){
+      sheet.style.top = ""; sheet.style.height = ""; sheet.style.bottom = "";
+      sheet.style.left = ""; sheet.style.width = ""; sheet.style.right = "";
+    }
     return;
   }
   const vv = window.visualViewport;
@@ -7958,10 +7961,16 @@ function repositionMobileNavForViewport(){
   const visibleBottom = vv.height + vv.offsetTop;
   bar.style.bottom = "auto";
   bar.style.top = Math.round(visibleBottom - barH) + "px";
+  bar.style.right = "auto";
+  bar.style.left = Math.round(vv.offsetLeft) + "px";
+  bar.style.width = Math.round(vv.width) + "px";
   if(sheet){
     sheet.style.bottom = "auto";
     sheet.style.top = Math.round(vv.offsetTop) + "px";
     sheet.style.height = Math.round(vv.height) + "px";
+    sheet.style.right = "auto";
+    sheet.style.left = Math.round(vv.offsetLeft) + "px";
+    sheet.style.width = Math.round(vv.width) + "px";
   }
 }
 function setupMobileViewportPin(){

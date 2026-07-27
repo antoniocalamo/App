@@ -1481,6 +1481,7 @@ input.cashflow-item-occ-input{
     background:var(--card); border-top:1px solid var(--line);
     box-shadow:0 -2px 14px rgba(0,0,0,0.10);
     will-change:transform;
+    -webkit-transform:translateZ(0); -webkit-backface-visibility:hidden;
     transition:transform .08s linear;
   }
   .mobile-bottom-bar .tab, .mobile-bottom-bar .mobile-more-btn{
@@ -1549,6 +1550,7 @@ input.cashflow-item-occ-input{
   }
   .coll-list > *{flex-shrink:0;}
   .stats-row{grid-template-columns:repeat(2,1fr);}
+  .stats-row.dashboard-stats-row{grid-template-columns:1fr;}
   .finance-grid{grid-template-columns:1fr;}
   /* Contenuti larghi: scroll orizzontale dedicato invece di schiacciare tutto */
   .gomme-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
@@ -3359,7 +3361,7 @@ function statCard(kpiKey){
   return card;
 }
 function renderStatsBar(main){
-  const row = el("div",{class:"stats-row"});
+  const row = el("div",{class:"stats-row dashboard-stats-row"});
   state.dashboard.kpiSelection.forEach((key,i)=>{
     const card = statCard(key);
     if(!card) return;
@@ -7982,13 +7984,13 @@ function repositionMobileNavForViewport(){
   const barTx = Math.round(vv.offsetLeft);
   const barTy = Math.round(vv.offsetTop + vv.height - (barH/s) - (layoutH - barH));
   bar.style.transformOrigin = "top left";
-  bar.style.transform = "translate(" + barTx + "px," + barTy + "px) scale(" + k + ")";
+  bar.style.transform = "translate3d(" + barTx + "px," + barTy + "px,0) scale(" + k + ")";
   if(sheet){
     // Il pop-up è ancorato (via CSS) a inset:0, quindi il suo angolo di riposo è già (0,0).
     const sheetTx = Math.round(vv.offsetLeft);
     const sheetTy = Math.round(vv.offsetTop);
     sheet.style.transformOrigin = "top left";
-    sheet.style.transform = "translate(" + sheetTx + "px," + sheetTy + "px) scale(" + k + ")";
+    sheet.style.transform = "translate3d(" + sheetTx + "px," + sheetTy + "px,0) scale(" + k + ")";
   }
 }
 let mobileNavRafScheduled = false;

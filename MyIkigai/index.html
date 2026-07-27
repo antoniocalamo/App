@@ -7974,7 +7974,7 @@ function repositionMobileNavForViewport(){
   bar.style.height = "";
   bar.style.right = "auto"; bar.style.bottom = "auto";
   bar.style.left = Math.round(vv.offsetLeft) + "px";
-  bar.style.top = Math.round(vv.offsetTop + vv.height - barH) + "px";
+  bar.style.top = Math.round(vv.offsetTop + vv.height - (barH/s)) + "px";
   if(sheet){
     sheet.style.transformOrigin = "top left";
     sheet.style.transform = "scale(" + (1/s) + ")";

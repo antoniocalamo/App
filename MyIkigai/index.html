@@ -1480,6 +1480,7 @@ input.cashflow-item-occ-input{
     padding:6px 4px calc(6px + env(safe-area-inset-bottom)) 4px; gap:2px;
     background:var(--card); border-top:1px solid var(--line);
     box-shadow:0 -2px 14px rgba(0,0,0,0.10);
+    will-change:transform;
   }
   .mobile-bottom-bar .tab, .mobile-bottom-bar .mobile-more-btn{
     flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -7937,12 +7938,26 @@ function closeMobileMoreSheet(){
 function renderMobileNav(){
   renderMobileBottomBar();
   if(document.getElementById("mobile-more-sheet").classList.contains("open")) renderMobileMoreSheet();
+  measureMobileNavBase();
   repositionMobileNavForViewport();
 }
 // Su mobile, "posizione fissa" nel browser è ancorata alla PAGINA, non allo schermo che si vede
 // davvero quando l'utente zooma con un pizzico. Con la visualViewport API sappiamo sempre qual è
 // la porzione di schermo realmente visibile in quel momento, e riposizioniamo la barra lì, invece
 // di lasciarla scivolare in basso fuori vista quando si zooma.
+//
+// Per evitare il tremolio, aggiorniamo SOLO la proprietà "transform" (traslazione + scala) ad ogni
+// fotogramma: è l'unica proprietà CSS che il browser può applicare senza ricalcolare il layout della
+// pagina, quindi resta fluida anche con eventi molto rapidi come un pizzico di zoom. Le misure "di
+// base" (altezza della barra, dimensioni dello schermo non zoomato) le leggiamo una volta sola,
+// non ad ogni fotogramma.
+let mobileNavBarH = 64, mobileNavLayoutW = 0, mobileNavLayoutH = 0;
+function measureMobileNavBase(){
+  const bar = document.getElementById("mobile-bottom-bar");
+  if(bar) mobileNavBarH = bar.offsetHeight || mobileNavBarH;
+  mobileNavLayoutW = document.documentElement.clientWidth;
+  mobileNavLayoutH = document.documentElement.clientHeight;
+}
 function repositionMobileNavForViewport(){
   const bar = document.getElementById("mobile-bottom-bar");
   const sheet = document.getElementById("mobile-more-sheet");
@@ -7952,44 +7967,45 @@ function repositionMobileNavForViewport(){
     [bar, sheet].forEach(elx=>{
       if(!elx) return;
       elx.style.transform = ""; elx.style.transformOrigin = "";
-      elx.style.top = ""; elx.style.bottom = ""; elx.style.left = ""; elx.style.right = "";
-      elx.style.width = ""; elx.style.height = "";
     });
     return;
   }
   const vv = window.visualViewport;
   const s = vv.scale || 1;
-  // Dimensioni "naturali" (quelle che avrebbero a zoom 1x): l'altezza reale della barra
-  // (offsetHeight non è mai influenzato dal transform, riflette sempre la misura di base)
-  // e la larghezza/altezza del layout viewport (che NON cambia con lo zoom a pizzico, a
-  // differenza della visual viewport). Applichiamo poi scale(1/s): così, quando il browser
-  // ingrandisce l'intera pagina di un fattore s per lo zoom, il risultato finale su schermo
-  // torna sempre alla dimensione naturale, come se lo zoom non la toccasse.
-  const barH = bar.offsetHeight || 64;
-  const layoutW = document.documentElement.clientWidth;
-  const layoutH = document.documentElement.clientHeight;
+  const k = 1/s;
+  const barH = mobileNavBarH;
+  const layoutH = mobileNavLayoutH;
+  // La barra è ancorata (via CSS) a left:0/bottom:0 nel suo stato naturale, quindi il suo
+  // angolo in alto a sinistra "di riposo" è a (0, layoutH-barH): la trasformazione qui sotto
+  // parte da lì per calcolare di quanto traslarla e scalarla.
+  const barTx = Math.round(vv.offsetLeft);
+  const barTy = Math.round(vv.offsetTop + vv.height - (barH/s) - (layoutH - barH));
   bar.style.transformOrigin = "top left";
-  bar.style.transform = "scale(" + (1/s) + ")";
-  bar.style.width = layoutW + "px";
-  bar.style.height = "";
-  bar.style.right = "auto"; bar.style.bottom = "auto";
-  bar.style.left = Math.round(vv.offsetLeft) + "px";
-  bar.style.top = Math.round(vv.offsetTop + vv.height - (barH/s)) + "px";
+  bar.style.transform = "translate(" + barTx + "px," + barTy + "px) scale(" + k + ")";
   if(sheet){
+    // Il pop-up è ancorato (via CSS) a inset:0, quindi il suo angolo di riposo è già (0,0).
+    const sheetTx = Math.round(vv.offsetLeft);
+    const sheetTy = Math.round(vv.offsetTop);
     sheet.style.transformOrigin = "top left";
-    sheet.style.transform = "scale(" + (1/s) + ")";
-    sheet.style.right = "auto"; sheet.style.bottom = "auto";
-    sheet.style.left = Math.round(vv.offsetLeft) + "px";
-    sheet.style.top = Math.round(vv.offsetTop) + "px";
-    sheet.style.width = layoutW + "px";
-    sheet.style.height = layoutH + "px";
+    sheet.style.transform = "translate(" + sheetTx + "px," + sheetTy + "px) scale(" + k + ")";
   }
 }
+let mobileNavRafScheduled = false;
+function scheduleRepositionMobileNav(){
+  if(mobileNavRafScheduled) return;
+  mobileNavRafScheduled = true;
+  requestAnimationFrame(()=>{
+    mobileNavRafScheduled = false;
+    repositionMobileNavForViewport();
+  });
+}
 function setupMobileViewportPin(){
+  measureMobileNavBase();
+  window.addEventListener("resize", ()=>{ measureMobileNavBase(); scheduleRepositionMobileNav(); });
+  window.addEventListener("orientationchange", ()=>{ measureMobileNavBase(); scheduleRepositionMobileNav(); });
   if(!window.visualViewport) return;
-  window.visualViewport.addEventListener("resize", repositionMobileNavForViewport);
-  window.visualViewport.addEventListener("scroll", repositionMobileNavForViewport);
-  window.addEventListener("resize", repositionMobileNavForViewport);
+  window.visualViewport.addEventListener("resize", scheduleRepositionMobileNav);
+  window.visualViewport.addEventListener("scroll", scheduleRepositionMobileNav);
   repositionMobileNavForViewport();
 }
 let builtinTabsEnhanced = false;

@@ -241,6 +241,8 @@ h1,h2,h3,.display{font-family:'Fraunces',serif;}
 }
 @keyframes boot-spin{ to{ transform:rotate(360deg); } }
 
+.mobile-bottom-bar, .mobile-more-sheet{display:none;}
+
 /* ---- Login screen ---- */
 .login-screen{
   display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -1466,35 +1468,69 @@ input.cashflow-item-occ-input{
 @media (max-width: 880px){
   html, body{height:auto; overflow:visible;}
   .app{flex-direction:column; height:auto; overflow:visible;}
-  .tabs{
-    position:fixed; left:0; right:0; bottom:0; top:auto; z-index:500;
-    flex-direction:row; width:100%; flex-wrap:nowrap;
-    padding:6px 6px calc(6px + env(safe-area-inset-bottom)) 6px; gap:2px;
-    overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch;
-    min-height:auto; max-height:none;
+  .tabs{position:static; height:0; padding:0; margin:0; overflow:visible; min-height:0; max-height:none;}
+  .tabs > .tab, .tabs > .tab-add,
+  #custom-tabs-slot-shared > .tab, #custom-tabs-slot-private > .tab{display:none;}
+  .tabs .brand{display:none;}
+  .tabs-group-label, #private-group-label{display:none;}
+
+  .mobile-bottom-bar{
+    position:fixed; left:0; right:0; bottom:0; z-index:500;
+    display:flex; flex-direction:row; width:100%; flex-wrap:nowrap;
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom)) 4px; gap:2px;
     background:var(--card); border-top:1px solid var(--line);
     box-shadow:0 -2px 14px rgba(0,0,0,0.10);
   }
-  .tabs .brand{display:none;}
-  .tabs-group-label, #private-group-label{display:none;}
-  #custom-tabs-slot-shared, #custom-tabs-slot-private{flex-direction:row; gap:2px;}
-  .tab{
-    flex-direction:column; align-items:center; justify-content:center; text-align:center;
-    gap:3px; border-radius:14px; padding:7px 10px; min-height:54px; min-width:58px;
-    white-space:nowrap; flex-shrink:0;
-    font-size:10.5px; font-weight:600;
+  .mobile-bottom-bar .tab, .mobile-bottom-bar .mobile-more-btn{
+    flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; gap:3px; border-radius:14px; padding:7px 4px; min-height:54px;
+    font-family:'Inter',sans-serif; font-size:10.2px; font-weight:600; white-space:nowrap;
     background:transparent !important; color:var(--ink-soft) !important;
     box-shadow:none !important; transform:none !important; opacity:1 !important;
+    border:none; cursor:pointer; position:relative;
   }
-  .tab .tab-icon{width:21px; height:21px; margin:0 auto;}
-  .tab .tab-label{-webkit-line-clamp:1; line-clamp:1; font-size:10.5px;}
-  .tab.active{position:relative; color:var(--forest) !important; background:var(--paper-2) !important;}
-  .tab.active::before{
+  .mobile-bottom-bar .tab-icon{width:21px; height:21px; margin:0 auto;}
+  .mobile-bottom-bar .tab-label{
+    -webkit-line-clamp:1; line-clamp:1; font-size:10.2px; overflow:hidden;
+    text-overflow:ellipsis; max-width:100%; display:block;
+  }
+  .mobile-bottom-bar .tab.active{color:var(--forest) !important; background:var(--paper-2) !important;}
+  .mobile-bottom-bar .tab.active::before{
     content:""; position:absolute; top:2px; left:24%; right:24%; height:3px;
     border-radius:0 0 4px 4px; background:var(--forest);
   }
-  .tab:not(.active):hover{transform:none;}
-  .tab-add{flex-shrink:0; white-space:nowrap; font-size:10.5px; min-height:54px; border-radius:14px;}
+  .tab-drag-grip, .tab-edit-btn{display:none;}
+  .custom-tab{padding-right:10px;}
+
+  .mobile-more-sheet{position:fixed; inset:0; z-index:600; display:none;}
+  .mobile-more-sheet.open{display:block;}
+  .mobile-more-backdrop{position:absolute; inset:0; background:rgba(20,20,20,0.4);}
+  .mobile-more-panel{
+    position:absolute; left:0; right:0; bottom:0; max-height:72vh; overflow-y:auto;
+    background:var(--card); border-radius:20px 20px 0 0;
+    padding:16px 14px calc(16px + env(safe-area-inset-bottom)) 14px;
+    box-shadow:0 -6px 28px rgba(0,0,0,0.2);
+  }
+  .mobile-more-title{
+    font-family:'Fraunces',serif; font-weight:600; font-size:16px; margin-bottom:8px; padding:0 6px;
+  }
+  .mobile-more-row{
+    display:flex; align-items:center; gap:12px; padding:12px 6px; border-radius:12px; cursor:pointer;
+  }
+  .mobile-more-row:active{background:var(--paper-2);}
+  .mobile-more-row .tab-icon{width:20px; height:20px; flex-shrink:0; color:var(--ink-soft);}
+  .mobile-more-label{flex:1; min-width:0; font-family:'Inter',sans-serif; font-size:14px; font-weight:600; color:var(--ink);}
+  .mobile-more-pin{
+    flex-shrink:0; width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+    border-radius:50%; color:var(--ink-soft); opacity:.5;
+  }
+  .mobile-more-pin svg{width:17px; height:17px;}
+  .mobile-more-pin.pinned{opacity:1; color:var(--forest); background:var(--paper-2);}
+  .mobile-more-add{
+    display:flex; align-items:center; gap:10px; padding:13px 6px; margin-top:6px; border-top:1px solid var(--line);
+    color:var(--ink-soft); font-family:'Inter',sans-serif; font-size:14px; font-weight:600; cursor:pointer;
+  }
+
   .undo-redo-wrap{right:14px; bottom:calc(70px + env(safe-area-inset-bottom));}
   .main-wrap{margin:0; border-radius:0;}
   .topbar{
@@ -1512,9 +1548,6 @@ input.cashflow-item-occ-input{
   .coll-list > *{flex-shrink:0;}
   .stats-row{grid-template-columns:repeat(2,1fr);}
   .finance-grid{grid-template-columns:1fr;}
-  /* Tocco più comodo sui controlli piccoli delle schede */
-  .tab-drag-grip, .tab-edit-btn{display:none;}
-  .custom-tab{padding-right:10px;}
   /* Contenuti larghi: scroll orizzontale dedicato invece di schiacciare tutto */
   .gomme-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
   table.tires{min-width:640px;}
@@ -1633,6 +1666,8 @@ input.cashflow-item-occ-input{
   <button id="undo-btn" class="undo-float" title="Annulla ultima modifica (es. un'eliminazione)">↶ Undo</button>
   <button id="redo-btn" class="undo-float" title="Ripristina la modifica annullata">↷ Redo</button>
 </div>
+<div id="mobile-bottom-bar" class="mobile-bottom-bar"></div>
+<div id="mobile-more-sheet" class="mobile-more-sheet"></div>
 
 <script>
 /* ---------------- storage helpers ---------------- */
@@ -1671,6 +1706,8 @@ const ICON_GEAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
 const ICON_GCAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4"/><path d="M16 3v4"/></svg>';
 const ICON_GRIP = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+const ICON_MORE_DOTS = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>';
+const ICON_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M8 3h8l-1 6 3 3v2H6v-2l3-3-1-6Z"/></svg>';
 const ICON_DROP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 3s7 7.5 7 12.5a7 7 0 1 1-14 0C5 10.5 12 3 12 3Z"/></svg>';
 const ICON_SPROUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M12 21V10"/><path d="M12 10C12 6 9 4 5 4c0 4 3 6 7 6Z"/><path d="M12 13c0-4 3-6 7-6 0 4-3 6-7 6Z"/></svg>';
 const ICON_LEAF_ORTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M20 4C10 4 4 10 4 20c10 0 16-6 16-16Z"/><path d="M6 18C10 14 14 10 19 5" stroke-linecap="round"/></svg>';
@@ -2039,7 +2076,7 @@ const store = {
   }
 };
 
-let state = { dashboard:null, orto:null, trips:null, bbqs:null, tires:null, finance:null, sharedBoards:null, customTabs:null, customTabsPrivate:null, hiddenBuiltins:null, taglines:null, dashTitles:null, gommeLayout:null, builtinLabels:null, accountSettings:null, maintenanceItems:null, googleCalendar:null, projectAssignees:null, ortoWeatherLocation:null };
+let state = { dashboard:null, orto:null, trips:null, bbqs:null, tires:null, finance:null, sharedBoards:null, customTabs:null, customTabsPrivate:null, hiddenBuiltins:null, taglines:null, dashTitles:null, gommeLayout:null, builtinLabels:null, accountSettings:null, maintenanceItems:null, googleCalendar:null, projectAssignees:null, ortoWeatherLocation:null, mobilePinned:null };
 let activeTrip = null, activeBbq = null, activeSharedBoard = null, activeProject = null;
 let activeMaintenanceItem = null;
 let goodThingPick = null;
@@ -2540,6 +2577,7 @@ async function loadAll(){
   Object.keys(state.builtinColors).forEach(k=>migrateColorField(state.builtinColors, k));
   state.builtinIcons = await store.get(privKey("builtinIcons"), {});
   state.builtinOrder = await store.get(privKey("builtinOrder"), []);
+  state.mobilePinned = await store.get(privKey("mobilePinned"), ["progetti","gomme"]);
   state.gommeLayout = await store.get(privKey("gommeLayout"), {colWidths:{}, rowHeights:{}});
   uiZoom = await store.get(privKey("uiZoom"), 1);
   appTheme = await store.get(privKey("appTheme"), "ikigai");
@@ -7680,6 +7718,7 @@ function renderCustomTabButtons(){
   state.customTabsPrivate.forEach((tab,i)=>{
     privateSlot.appendChild(customTabButton(tab, i, state.customTabsPrivate));
   });
+  renderMobileNav();
 }
 function customTabButton(tab, index, arr){
   const btn = el("button",{class:"tab custom-tab", "data-tab":"custom:"+tab.id, style:`background:${colorForIndex(tab.color)||""}`});
@@ -7750,6 +7789,7 @@ function applyHiddenBuiltins(){
     const btn = document.querySelector('.tab[data-builtin="'+key+'"]');
     if(btn) btn.style.display = state.hiddenBuiltins.includes(key) ? "none" : "";
   });
+  renderMobileNav();
 }
 function applyBuiltinLabels(){
   Object.keys(BUILTIN_TABS).forEach(key=>{
@@ -7790,6 +7830,112 @@ function applyBuiltinOrder(){
     const btn = document.querySelector('.tab[data-builtin="'+key+'"]');
     if(btn) nav.insertBefore(btn, anchor);
   });
+  renderMobileNav();
+}
+
+/* ---------------- Bottom tab bar mobile (Home + Finanze fissi, 2 slot personalizzabili, Altro) ---------------- */
+const MOBILE_FIXED_TABS = ["dashboard","finanze"];
+function getMobileNavSourceTabs(){
+  // Le tab "vere" (quelle nella sidebar desktop, nascosta su mobile) restano l'unica fonte di verità
+  // per icone/etichette/ordine: qui le leggiamo, non le tocchiamo.
+  return Array.from(document.querySelectorAll('#tabs > .tab, #custom-tabs-slot-shared > .tab, #custom-tabs-slot-private > .tab'))
+    .filter(btn => btn.style.display !== "none");
+}
+function mobileTabLabel(btn){
+  const mainSpan = btn.querySelector(".tab-label-main");
+  if(mainSpan) return mainSpan.textContent.trim();
+  const labelSpan = btn.querySelector(".tab-label");
+  return labelSpan ? labelSpan.textContent.trim() : "";
+}
+function navigateFromMobile(tabId){
+  closeMobileMoreSheet();
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  const orig = document.querySelector('.tab[data-tab="'+tabId+'"]');
+  if(orig) orig.classList.add("active");
+  render(tabId);
+}
+function renderMobileBottomBar(){
+  const bar = document.getElementById("mobile-bottom-bar");
+  if(!bar) return;
+  bar.innerHTML = "";
+  const sourceTabs = getMobileNavSourceTabs();
+  const byId = {};
+  sourceTabs.forEach(btn=> byId[btn.dataset.tab] = btn);
+  const pinned = (state.mobilePinned||[]).filter(id => byId[id] && !MOBILE_FIXED_TABS.includes(id)).slice(0,2);
+  const shownIds = MOBILE_FIXED_TABS.concat(pinned).filter(id=>byId[id]);
+  shownIds.forEach(id=>{
+    const orig = byId[id];
+    const clone = orig.cloneNode(true);
+    clone.classList.toggle("active", id===currentRenderedTab);
+    clone.addEventListener("click", ()=> navigateFromMobile(id));
+    bar.appendChild(clone);
+  });
+  const moreBtn = el("button",{class:"mobile-more-btn", type:"button"});
+  moreBtn.innerHTML = '<span class="tab-icon">'+ICON_MORE_DOTS+'</span><span class="tab-label">Altro</span>';
+  moreBtn.addEventListener("click", (e)=>{ e.stopPropagation(); openMobileMoreSheet(); });
+  bar.appendChild(moreBtn);
+}
+function toggleMobilePinned(id){
+  let pinned = (state.mobilePinned||[]).slice();
+  if(pinned.includes(id)){
+    pinned = pinned.filter(x=>x!==id);
+  } else {
+    pinned.push(id);
+    if(pinned.length>2) pinned = pinned.slice(pinned.length-2);
+  }
+  state.mobilePinned = pinned;
+  store.set(privKey("mobilePinned"), pinned);
+  renderMobileBottomBar();
+  renderMobileMoreSheet();
+}
+function renderMobileMoreSheet(){
+  const sheet = document.getElementById("mobile-more-sheet");
+  if(!sheet) return;
+  const wasOpen = sheet.classList.contains("open");
+  sheet.innerHTML = "";
+  const backdrop = el("div",{class:"mobile-more-backdrop"});
+  backdrop.addEventListener("click", closeMobileMoreSheet);
+  sheet.appendChild(backdrop);
+  const panel = el("div",{class:"mobile-more-panel"});
+  panel.appendChild(el("div",{class:"mobile-more-title"}, "Altre schede"));
+  const sourceTabs = getMobileNavSourceTabs();
+  const pinned = (state.mobilePinned||[]).slice(0,2);
+  sourceTabs.forEach(orig=>{
+    const id = orig.dataset.tab;
+    if(MOBILE_FIXED_TABS.includes(id)) return;
+    const iconSpan0 = orig.querySelector(".tab-icon");
+    const row = el("div",{class:"mobile-more-row"});
+    row.appendChild(el("span",{class:"tab-icon", html: iconSpan0?iconSpan0.innerHTML:""}));
+    row.appendChild(el("span",{class:"mobile-more-label"}, mobileTabLabel(orig)));
+    const isPinned = pinned.includes(id);
+    const pinBtn = el("span",{
+      class:"mobile-more-pin"+(isPinned?" pinned":""),
+      title: isPinned?"Rimuovi dalla barra in basso":"Fissa nella barra in basso",
+      html: ICON_PIN
+    });
+    pinBtn.addEventListener("click",(e)=>{ e.stopPropagation(); toggleMobilePinned(id); });
+    row.appendChild(pinBtn);
+    row.addEventListener("click", ()=> navigateFromMobile(id));
+    panel.appendChild(row);
+  });
+  const addRow = el("div",{class:"mobile-more-add"});
+  addRow.innerHTML = '<span style="font-size:16px;line-height:1;">+</span> Nuova scheda';
+  addRow.addEventListener("click", ()=>{ closeMobileMoreSheet(); openNewTabModal(); });
+  panel.appendChild(addRow);
+  sheet.appendChild(panel);
+  if(wasOpen) sheet.classList.add("open");
+}
+function openMobileMoreSheet(){
+  renderMobileMoreSheet();
+  document.getElementById("mobile-more-sheet").classList.add("open");
+}
+function closeMobileMoreSheet(){
+  const sheet = document.getElementById("mobile-more-sheet");
+  if(sheet) sheet.classList.remove("open");
+}
+function renderMobileNav(){
+  renderMobileBottomBar();
+  if(document.getElementById("mobile-more-sheet").classList.contains("open")) renderMobileMoreSheet();
 }
 let builtinTabsEnhanced = false;
 function enhanceBuiltinTabs(){
@@ -7938,6 +8084,7 @@ function autoResize(ta){
 }
 function render(tab){
   currentRenderedTab = tab;
+  renderMobileNav();
   const main = clear(document.getElementById("main"));
   if(tab==="dashboard") renderDashboard(main);
   else if(tab==="orto") renderOrto(main);

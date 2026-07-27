@@ -1080,17 +1080,17 @@ table.tires textarea.gomme-cell{
 /* ---- Finanze: sotto-navigazione ---- */
 .finance-subnav{display:flex; gap:8px; margin-bottom:16px;}
 .finance-subnav-btn.active{background:var(--forest); color:#fff; border-color:var(--forest);}
-.cashflow-cols{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+.cashflow-cols{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px;}
 @media (max-width:700px){ .cashflow-cols{grid-template-columns:1fr;} }
-.cashflow-col{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px;}
+.cashflow-col{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; min-width:0; overflow:hidden;}
 .cashflow-col-title{
   font-family:'Fraunces',serif; font-weight:600; font-size:15px; margin-bottom:10px;
   display:flex; justify-content:space-between; align-items:baseline; gap:8px;
 }
 .cashflow-col-total{font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink-soft); flex-shrink:0;}
-.cashflow-item{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13px;}
+.cashflow-item{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13px; min-width:0;}
 .cashflow-item:last-of-type{border-bottom:none;}
-.cashflow-item-cat{font-size:10px; color:var(--ink-soft); background:var(--paper-2); border-radius:6px; padding:1px 6px; flex-shrink:0; white-space:nowrap;}
+.cashflow-item-cat{font-size:10px; color:var(--ink-soft); background:var(--paper-2); border-radius:6px; padding:1px 6px; flex-shrink:1; min-width:0; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .cashflow-item-desc{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .cashflow-item-amt{font-family:'IBM Plex Mono',monospace; font-size:12.5px; flex-shrink:0;}
 .cashflow-item-amt-input{

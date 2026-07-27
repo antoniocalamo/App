@@ -7949,28 +7949,40 @@ function repositionMobileNavForViewport(){
   if(!bar) return;
   const isMobile = window.matchMedia("(max-width:880px)").matches;
   if(!isMobile || !window.visualViewport){
-    bar.style.top = ""; bar.style.bottom = ""; bar.style.left = ""; bar.style.width = ""; bar.style.right = "";
-    if(sheet){
-      sheet.style.top = ""; sheet.style.height = ""; sheet.style.bottom = "";
-      sheet.style.left = ""; sheet.style.width = ""; sheet.style.right = "";
-    }
+    [bar, sheet].forEach(elx=>{
+      if(!elx) return;
+      elx.style.transform = ""; elx.style.transformOrigin = "";
+      elx.style.top = ""; elx.style.bottom = ""; elx.style.left = ""; elx.style.right = "";
+      elx.style.width = ""; elx.style.height = "";
+    });
     return;
   }
   const vv = window.visualViewport;
+  const s = vv.scale || 1;
+  // Dimensioni "naturali" (quelle che avrebbero a zoom 1x): l'altezza reale della barra
+  // (offsetHeight non è mai influenzato dal transform, riflette sempre la misura di base)
+  // e la larghezza/altezza del layout viewport (che NON cambia con lo zoom a pizzico, a
+  // differenza della visual viewport). Applichiamo poi scale(1/s): così, quando il browser
+  // ingrandisce l'intera pagina di un fattore s per lo zoom, il risultato finale su schermo
+  // torna sempre alla dimensione naturale, come se lo zoom non la toccasse.
   const barH = bar.offsetHeight || 64;
-  const visibleBottom = vv.height + vv.offsetTop;
-  bar.style.bottom = "auto";
-  bar.style.top = Math.round(visibleBottom - barH) + "px";
-  bar.style.right = "auto";
+  const layoutW = document.documentElement.clientWidth;
+  const layoutH = document.documentElement.clientHeight;
+  bar.style.transformOrigin = "top left";
+  bar.style.transform = "scale(" + (1/s) + ")";
+  bar.style.width = layoutW + "px";
+  bar.style.height = "";
+  bar.style.right = "auto"; bar.style.bottom = "auto";
   bar.style.left = Math.round(vv.offsetLeft) + "px";
-  bar.style.width = Math.round(vv.width) + "px";
+  bar.style.top = Math.round(vv.offsetTop + vv.height - barH) + "px";
   if(sheet){
-    sheet.style.bottom = "auto";
-    sheet.style.top = Math.round(vv.offsetTop) + "px";
-    sheet.style.height = Math.round(vv.height) + "px";
-    sheet.style.right = "auto";
+    sheet.style.transformOrigin = "top left";
+    sheet.style.transform = "scale(" + (1/s) + ")";
+    sheet.style.right = "auto"; sheet.style.bottom = "auto";
     sheet.style.left = Math.round(vv.offsetLeft) + "px";
-    sheet.style.width = Math.round(vv.width) + "px";
+    sheet.style.top = Math.round(vv.offsetTop) + "px";
+    sheet.style.width = layoutW + "px";
+    sheet.style.height = layoutH + "px";
   }
 }
 function setupMobileViewportPin(){

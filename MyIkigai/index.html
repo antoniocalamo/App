@@ -30,6 +30,7 @@
   --fin-liquid-bg:#E9F6E9; --fin-liquid-border:#B9E0B9; --fin-liquid-head:#2F6B2F;
   --fin-nonliquid-bg:#DCEBDD; --fin-nonliquid-border:#A8CBA9; --fin-nonliquid-head:#1F4A28;
   --fin-debts-bg:#FBEAE7; --fin-debts-border:#EFC2BA; --fin-debts-head:#9C3B2E;
+  --flow-income:#2F6B2F; --flow-expense:#9C3B2E; --flow-savings:#2D6187;
 }
 :root[data-app-theme="milano"]{
   --paper:#F7F7F7;
@@ -48,6 +49,7 @@
   --tab-text:#F7F7F7;
   --urgent-text:#B3261E;
   --shadow: 0 2px 10px rgba(44,44,44,0.10);
+  --flow-income:#4C7A52; --flow-expense:#B3261E; --flow-savings:#35507A;
 }
 :root[data-app-theme="pirati"]{
   --paper:#F4EBD3;
@@ -66,6 +68,7 @@
   --tab-text:#F4EBD3;
   --urgent-text:#8C3A1A;
   --shadow: 0 2px 10px rgba(14,34,56,0.12);
+  --flow-income:#3C6E47; --flow-expense:#8C3A1A; --flow-savings:#1E4D6B;
 }
 :root[data-app-theme="ninja"]{
   --paper:#191919;
@@ -87,6 +90,7 @@
   --fin-liquid-bg:#1E2E22; --fin-liquid-border:#35503F; --fin-liquid-head:#7FBF8A;
   --fin-nonliquid-bg:#16241D; --fin-nonliquid-border:#2E4A3A; --fin-nonliquid-head:#6BAF7A;
   --fin-debts-bg:#2E1A18; --fin-debts-border:#4A2A26; --fin-debts-head:#E08670;
+  --flow-income:#7FBF8A; --flow-expense:#FF6B6B; --flow-savings:#6FA8D8;
 }
 *{box-sizing:border-box;}
 html, body{height:100%;}
@@ -224,6 +228,17 @@ h1,h2,h3,.display{font-family:'Fraunces',serif;}
 }
 .tab:not(.active){opacity:.88;}
 .tab:not(.active):hover{transform:translateX(6px); opacity:1;}
+
+/* ---- Boot loader (mostrato mentre si verifica la sessione, prima di sapere se serve il login) ---- */
+.boot-loader{
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  background:var(--paper); z-index:9999;
+}
+.boot-spinner{
+  width:32px; height:32px; border:3px solid var(--line); border-top-color:var(--forest);
+  border-radius:50%; animation:boot-spin .8s linear infinite;
+}
+@keyframes boot-spin{ to{ transform:rotate(360deg); } }
 
 /* ---- Login screen ---- */
 .login-screen{
@@ -1090,24 +1105,40 @@ table.tires textarea.gomme-cell{
 .cashflow-col-total{font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink-soft); flex-shrink:0;}
 .cashflow-item{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13px; min-width:0;}
 .cashflow-item:last-of-type{border-bottom:none;}
-.cashflow-item-cat{font-size:10px; color:var(--ink-soft); background:var(--paper-2); border-radius:6px; padding:1px 6px; flex-shrink:1; min-width:0; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-.cashflow-item-desc{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+input.cashflow-item-cat-input{
+  width:64px; flex-shrink:0; border:none; background:var(--paper-2); border-radius:6px; font-size:10px;
+  color:var(--ink-soft); padding:3px 6px;
+}
+input.cashflow-item-cat-input:focus{outline:none; background:var(--paper-2); border-radius:4px;}
+input.cashflow-item-desc-input{
+  flex:1; min-width:0; border:none; background:transparent; font-size:13px; color:var(--ink); padding:2px;
+}
+input.cashflow-item-desc-input:focus{outline:none; background:var(--paper-2); border-radius:4px;}
+.cashflow-item-shared-toggle{
+  cursor:pointer; flex-shrink:0; font-size:10px; color:var(--ink-soft); background:var(--paper-2);
+  border-radius:6px; padding:2px 6px; white-space:nowrap; user-select:none;
+}
+.cashflow-item-shared-toggle.active{background:var(--teal); color:#fff;}
 .cashflow-item-amt{font-family:'IBM Plex Mono',monospace; font-size:12.5px; flex-shrink:0;}
-.cashflow-item-amt-input{
+input.cashflow-item-amt-input{
   width:64px; flex-shrink:0; border:none; background:transparent; font-family:'IBM Plex Mono',monospace;
   font-size:11.5px; color:var(--ink); text-align:right; padding:2px;
 }
 .cashflow-item-amt-input:focus{outline:none; background:var(--paper-2); border-radius:4px;}
-.cashflow-freq-select{
-  flex-shrink:0; border:none; background:var(--paper-2); border-radius:6px; font-size:10px;
-  color:var(--ink-soft); padding:2px 4px;
+.cashflow-item-currency{font-size:11px; color:var(--ink-soft); flex-shrink:0;}
+input.cashflow-item-occ-input{
+  width:44px; flex-shrink:0; border:none; background:transparent; font-family:'IBM Plex Mono',monospace;
+  font-size:11.5px; color:var(--ink); text-align:center; padding:2px;
 }
+.cashflow-item-occ-input:focus{outline:none; background:var(--paper-2); border-radius:4px;}
+.cashflow-item-occ-label{font-size:10px; color:var(--ink-soft); flex-shrink:0; white-space:nowrap;}
+.cashflow-add-row input.amt{width:100px; flex:none;}
+.cashflow-add-row input.occ{width:60px; flex:none; text-align:center;}
 .cashflow-item-del{cursor:pointer; color:var(--ink-soft); flex-shrink:0; opacity:.5;}
 .cashflow-item-del:hover{color:var(--urgent-text, var(--rust)); opacity:1;}
-.cashflow-add-row{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;}
+.cashflow-add-row{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap; align-items:center;}
 .cashflow-add-row .cat{width:84px; flex:none;}
 .cashflow-add-row .desc{flex:1; min-width:100px;}
-.cashflow-add-row input[type=number]{width:90px; flex:none;}
 .cashflow-breakdown-title{font-family:'Fraunces',serif; font-weight:600; font-size:15px; margin:20px 0 10px;}
 .cashflow-breakdown{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px;}
 .cashflow-breakdown-row{display:flex; align-items:center; gap:10px; padding:5px 0; font-size:12.5px;}
@@ -1471,7 +1502,8 @@ table.tires textarea.gomme-cell{
 </style>
 </head>
 <body>
-<div id="login-screen" class="login-screen">
+<div id="boot-loader" class="boot-loader"><div class="boot-spinner"></div></div>
+<div id="login-screen" class="login-screen" style="display:none;">
   <form id="login-form" class="login-card">
     <div class="brand" style="justify-content:center;margin-bottom:20px;">
       <div class="brand-mark"><img id="login-logo-img" alt=""></div>
@@ -2509,6 +2541,7 @@ async function initAuth(){
 }
 function showLogin(){
   document.getElementById("app-root").style.display="none";
+  document.getElementById("boot-loader").style.display="none";
   document.getElementById("login-screen").style.display="flex";
 }
 async function startApp(){
@@ -2530,6 +2563,7 @@ async function startApp(){
   // L'app-root resta nascosto fino a qui: sidebar (ordine/colori/etichette) e contenuto
   // sono già pronti quando compare, invece di mostrarsi per un istante con l'ordine
   // "di fabbrica" del markup statico e poi "saltare" a quello personalizzato.
+  document.getElementById("boot-loader").style.display="none";
   document.getElementById("login-screen").style.display="none";
   document.getElementById("app-root").style.display="flex";
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
@@ -7126,7 +7160,9 @@ function renderFinanzeInvestimenti(main){
 }
 
 function cashflowMonthlyEquivalent(item){
-  return item.frequency==="annual" ? (item.amount||0)/12 : (item.amount||0);
+  const occ = item.occurrences!=null ? item.occurrences : (item.frequency==="annual" ? 1 : 12);
+  const base = (item.amount||0) * occ / 12;
+  return item.shared ? base/2 : base;
 }
 function cashflowTotals(){
   const incomes = state.finance.cashflow.incomes||[];
@@ -7137,29 +7173,29 @@ function cashflowTotals(){
 }
 function renderFinanzeCashflow(main){
   main.appendChild(el("div",{style:"font-size:12.5px;color:var(--ink-soft);margin-bottom:16px;"},
-    "Voci ricorrenti (entrate e uscite fisse) per stimare il risparmio mensile e annuale — inseriscile una volta, con la loro frequenza."));
+    "Voci ricorrenti (entrate e uscite fisse): inserisci l'importo di ogni occorrenza e quante volte all'anno si verifica (es. stipendio 1.000€ × 14 occorrenze = 14.000€/anno)."));
 
   const totals = cashflowTotals();
-  const statsRow = el("div",{class:"stats-row"});
   const mk = (label, value, colorVar)=>{
     const c = el("div",{class:"stat-card", style: colorVar?`border-left-color:${colorVar};`:""});
     c.appendChild(el("div",{class:"stat-value", style: colorVar?`color:${colorVar};`:""}, value));
     c.appendChild(el("div",{class:"stat-label"}, label));
     return c;
   };
-  statsRow.appendChild(mk("Entrate mensili (equiv.)", fmtEUR(totals.monthlyIncome)));
-  statsRow.appendChild(mk("Uscite mensili (equiv.)", fmtEUR(totals.monthlyExpense)));
-  statsRow.appendChild(mk("Risparmio mensile stimato", fmtEUR(totals.monthlySavings), totals.monthlySavings>=0?"var(--forest)":"var(--urgent-text, var(--rust))"));
-  statsRow.appendChild(mk("Risparmio annuale stimato", fmtEUR(totals.monthlySavings*12), totals.monthlySavings>=0?"var(--forest)":"var(--urgent-text, var(--rust))"));
-  main.appendChild(statsRow);
+  const savingsRow = el("div",{class:"stats-row", style:"grid-template-columns:repeat(2,1fr);"});
+  savingsRow.appendChild(mk("Risparmio mensile stimato", fmtEUR(totals.monthlySavings), "var(--flow-savings)"));
+  savingsRow.appendChild(mk("Risparmio annuale stimato", fmtEUR(totals.monthlySavings*12), "var(--flow-savings)"));
+  main.appendChild(savingsRow);
+  const flowRow = el("div",{class:"cashflow-cols", style:"margin-bottom:16px;"});
+  flowRow.appendChild(mk("Entrate mensili (equiv.)", fmtEUR(totals.monthlyIncome), "var(--flow-income)"));
+  flowRow.appendChild(mk("Uscite mensili (equiv.)", fmtEUR(totals.monthlyExpense), "var(--flow-expense)"));
+  main.appendChild(flowRow);
 
   function buildCol(type, title, placeholder){
     const key = type==="income" ? "incomes" : "expenses";
     const col = el("div",{class:"cashflow-col"});
     const head = el("div",{class:"cashflow-col-title"});
     head.appendChild(el("span",{}, title));
-    const totalMonthly = type==="income" ? totals.monthlyIncome : totals.monthlyExpense;
-    head.appendChild(el("span",{class:"cashflow-col-total"}, fmtEUR(totalMonthly)+"/mese"));
     col.appendChild(head);
     const items = state.finance.cashflow[key]||[];
     if(!items.length){
@@ -7167,21 +7203,38 @@ function renderFinanzeCashflow(main){
     }
     items.slice().sort((a,b)=> cashflowMonthlyEquivalent(b)-cashflowMonthlyEquivalent(a)).forEach(it=>{
       const row = el("div",{class:"cashflow-item"});
-      if(it.category) row.appendChild(el("span",{class:"cashflow-item-cat"}, it.category));
-      row.appendChild(el("span",{class:"cashflow-item-desc"}, it.desc||"(senza descrizione)"));
-      const freqSel = el("select",{class:"cashflow-freq-select"});
-      [["monthly","/mese"],["annual","/anno"]].forEach(([v,l])=> freqSel.appendChild(el("option",{value:v}, l)));
-      freqSel.value = it.frequency||"monthly";
-      freqSel.addEventListener("change", ()=>{
-        it.frequency = freqSel.value; store.set(privKey("finance"), state.finance); render("finanze");
+      const catInp2 = el("input",{type:"text", class:"cashflow-item-cat-input", placeholder:"categoria", value:it.category||""});
+      catInp2.addEventListener("change", ()=>{
+        it.category = catInp2.value.trim(); store.set(privKey("finance"), state.finance); render("finanze");
       });
+      row.appendChild(catInp2);
+      const descInp2 = el("input",{type:"text", class:"cashflow-item-desc-input", placeholder:"descrizione", value:it.desc||""});
+      descInp2.addEventListener("change", ()=>{
+        it.desc = descInp2.value.trim(); store.set(privKey("finance"), state.finance); render("finanze");
+      });
+      row.appendChild(descInp2);
+      row.appendChild(el("span",{class:"cashflow-item-currency"}, "€"));
       const amtInp = el("input",{type:"number", step:"0.01", min:"0", class:"cashflow-item-amt-input", value:String(it.amount||0)});
       amtInp.addEventListener("change", ()=>{
         const v = parseFloat(amtInp.value); it.amount = isNaN(v)?0:v;
         store.set(privKey("finance"), state.finance); render("finanze");
       });
       row.appendChild(amtInp);
-      row.appendChild(freqSel);
+      const occDefault = it.occurrences!=null ? it.occurrences : (it.frequency==="annual"?1:12);
+      const occInp = el("input",{type:"number", step:"1", min:"1", max:"365", class:"cashflow-item-occ-input", value:String(occDefault)});
+      occInp.addEventListener("change", ()=>{
+        const v = parseInt(occInp.value,10); it.occurrences = (isNaN(v)||v<1)?1:v; delete it.frequency;
+        store.set(privKey("finance"), state.finance); render("finanze");
+      });
+      row.appendChild(occInp);
+      row.appendChild(el("span",{class:"cashflow-item-occ-label"}, "×/anno"));
+      if(type==="expense"){
+        const sharedToggle = el("span",{class:"cashflow-item-shared-toggle"+(it.shared?" active":""), title:"Condivisa (importo diviso 2)"}, "÷2");
+        sharedToggle.addEventListener("click", ()=>{
+          it.shared = !it.shared; store.set(privKey("finance"), state.finance); render("finanze");
+        });
+        row.appendChild(sharedToggle);
+      }
       const del = el("span",{class:"cashflow-item-del", title:"Elimina"}, "✕");
       del.addEventListener("click", ()=>{
         state.finance.cashflow[key] = state.finance.cashflow[key].filter(x=>x.id!==it.id);
@@ -7193,22 +7246,34 @@ function renderFinanzeCashflow(main){
     const addRow = el("div",{class:"cashflow-add-row"});
     const catInp = el("input",{type:"text", class:"cat", placeholder:"categoria"});
     const descInp = el("input",{type:"text", class:"desc", placeholder, enterkeyhint:"done"});
-    const amtInp = el("input",{type:"number", step:"0.01", min:"0", placeholder:"importo €"});
-    const freqSel = el("select",{});
-    [["monthly","al mese"],["annual","all'anno"]].forEach(([v,l])=> freqSel.appendChild(el("option",{value:v}, l)));
+    const currencyLbl = el("span",{class:"cashflow-item-currency"}, "€");
+    const amtInp = el("input",{type:"number", step:"0.01", min:"0", class:"amt", placeholder:"importo"});
+    const occInp = el("input",{type:"number", step:"1", min:"1", max:"365", class:"occ", placeholder:"×/anno", value:"12"});
+    let addShared = false;
+    let addSharedToggle = null;
+    if(type==="expense"){
+      addSharedToggle = el("span",{class:"cashflow-item-shared-toggle", title:"Condivisa (importo diviso 2)"}, "÷2");
+      addSharedToggle.addEventListener("click", ()=>{
+        addShared = !addShared;
+        addSharedToggle.classList.toggle("active", addShared);
+      });
+    }
     function addEntry(){
       const amount = parseFloat(amtInp.value);
       if(!amount || amount<=0) return;
+      const occ = parseInt(occInp.value,10);
       state.finance.cashflow[key].push({
         id:"cf"+Date.now()+Math.random().toString(36).slice(2,6),
-        type, category:catInp.value.trim(), desc:descInp.value.trim(), amount, frequency:freqSel.value
+        type, category:catInp.value.trim(), desc:descInp.value.trim(), amount, occurrences:(isNaN(occ)||occ<1)?12:occ,
+        shared: addShared
       });
       store.set(privKey("finance"), state.finance); render("finanze");
     }
-    [catInp, descInp, amtInp].forEach(inp=>{
+    [catInp, descInp, amtInp, occInp].forEach(inp=>{
       inp.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); addEntry(); } });
     });
-    addRow.appendChild(catInp); addRow.appendChild(descInp); addRow.appendChild(amtInp); addRow.appendChild(freqSel);
+    addRow.appendChild(catInp); addRow.appendChild(descInp); addRow.appendChild(currencyLbl); addRow.appendChild(amtInp); addRow.appendChild(occInp);
+    if(addSharedToggle) addRow.appendChild(addSharedToggle);
     const addBtn = el("button",{class:"btn ghost small"}, "+");
     addBtn.addEventListener("click", addEntry);
     addRow.appendChild(addBtn);

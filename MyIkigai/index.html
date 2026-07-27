@@ -1482,7 +1482,6 @@ input.cashflow-item-occ-input{
     box-shadow:0 -2px 14px rgba(0,0,0,0.10);
     will-change:transform;
     -webkit-transform:translateZ(0); -webkit-backface-visibility:hidden;
-    transition:transform .08s linear;
   }
   .mobile-bottom-bar .tab, .mobile-bottom-bar .mobile-more-btn{
     flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -1505,7 +1504,7 @@ input.cashflow-item-occ-input{
   .tab-drag-grip, .tab-edit-btn{display:none;}
   .custom-tab{padding-right:10px;}
 
-  .mobile-more-sheet{position:fixed; inset:0; z-index:600; display:none; will-change:transform; transition:transform .08s linear;}
+  .mobile-more-sheet{position:fixed; inset:0; z-index:600; display:none; will-change:transform;}
   .mobile-more-sheet.open{display:block;}
   .mobile-more-backdrop{position:absolute; inset:0; background:rgba(20,20,20,0.4);}
   .mobile-more-panel{
@@ -2441,6 +2440,9 @@ async function loadAll(){
   }
   if(!state.dashboard.kpiSelection){
     state.dashboard.kpiSelection = DEFAULT_KPI_SELECTION.slice();
+  }
+  if(state.dashboard.widgetsHidden===undefined){
+    state.dashboard.widgetsHidden = window.matchMedia("(max-width:880px)").matches;
   }
   if(state.dashboard.kpiSelection.includes("taskPct")){
     state.dashboard.kpiSelection = state.dashboard.kpiSelection.filter(k=>k!=="taskPct");
@@ -3703,6 +3705,13 @@ function renderDashboard(main){
   const kpiEditBtn = el("button",{class:"btn ghost small"},"Modifica widget");
   kpiEditBtn.addEventListener("click", openKpiSettingsModal);
   todoActions.appendChild(kpiEditBtn);
+  const widgetsToggleBtn = el("button",{class:"btn ghost small"}, state.dashboard.widgetsHidden ? "Mostra widget" : "Nascondi widget");
+  widgetsToggleBtn.addEventListener("click", ()=>{
+    state.dashboard.widgetsHidden = !state.dashboard.widgetsHidden;
+    store.set(privKey("dashboard"), state.dashboard);
+    render("dashboard");
+  });
+  todoActions.appendChild(widgetsToggleBtn);
   if(past.length){
     const hasPendingPast = past.some(d => (state.dashboard.days[d]||[]).some(t=>!t.done));
     const histToggle = el("button",{class:"btn ghost small history-toggle"+(hasPendingPast?" has-pending":""),
@@ -3769,7 +3778,7 @@ function renderDashboard(main){
   }
   headerWrap.appendChild(subRow);
   main.appendChild(headerWrap);
-  renderStatsBar(main);
+  if(!state.dashboard.widgetsHidden) renderStatsBar(main);
 
   main.appendChild(sectionLabel("To Do List", "var(--forest)", todoActions));
 

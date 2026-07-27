@@ -456,6 +456,7 @@ textarea{resize:vertical;}
   text-transform:uppercase; color:var(--ink-soft); font-weight:600;
   padding-bottom:9px; margin-bottom:12px; border-bottom:1px solid var(--line);
 }
+.section-label-text{flex:1;}
 .section-add-btn{
   width:17px; height:17px; border-radius:50%; border:1px solid var(--line);
   background:transparent; color:var(--ink-soft); cursor:pointer; flex-shrink:0;
@@ -1535,13 +1536,26 @@ input.cashflow-item-occ-input{
 
   .undo-redo-wrap{right:14px; bottom:calc(70px + env(safe-area-inset-bottom));}
   .main-wrap{margin:0; border-radius:0;}
+  .topbar-row-controls, .topbar-row-account{display:contents;}
   .topbar{
-    padding:14px 16px 0 16px; flex-wrap:wrap; justify-content:space-between; row-gap:10px;
+    display:flex; flex-direction:row; flex-wrap:wrap; align-items:center;
+    padding:14px 16px 0 16px; row-gap:8px; column-gap:10px;
   }
-  .user-email{display:none;}
+  .user-email{display:block; order:1; flex:1 1 100%; font-size:13px;}
+  .zoom-controls{display:none;}
+  .theme-select{order:2;}
+  .account-settings-btn{order:3;}
+  #logout-btn{order:4;}
   main{margin:0; padding:18px 16px calc(88px + env(safe-area-inset-bottom)) 16px;}
   .dash-grid{grid-template-columns:1fr;}
-  .day-row{grid-template-columns:64px 1fr; gap:8px;}
+  .day-row{grid-template-columns:1fr; gap:4px;}
+  .day-label{
+    display:block; width:100%; box-sizing:border-box; padding:6px 12px;
+    border-radius:8px; background:var(--day-color, var(--ink-soft)); color:#fff;
+    font-size:12.5px;
+  }
+  .day-row.today .day-label{display:block; padding:6px 12px; border-radius:8px;}
+  .day-row-history .day-label{background:transparent; color:var(--ink-soft); padding:0 2px;}
   .collection{flex-direction:column;}
   .coll-list{
     width:100%; flex-direction:row; flex-wrap:nowrap; flex-shrink:0;
@@ -1550,6 +1564,13 @@ input.cashflow-item-occ-input{
   .coll-list > *{flex-shrink:0;}
   .stats-row{grid-template-columns:repeat(2,1fr);}
   .stats-row.dashboard-stats-row{grid-template-columns:1fr;}
+  .section-label{flex-wrap:wrap; row-gap:6px;}
+  .section-label-text{flex:1 1 100%;}
+  .todo-header-actions{
+    flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    width:100%; padding-bottom:4px; gap:10px;
+  }
+  .todo-header-actions > *{flex-shrink:0; white-space:nowrap;}
   .finance-grid{grid-template-columns:1fr;}
   /* Contenuti larghi: scroll orizzontale dedicato invece di schiacciare tutto */
   .gomme-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
@@ -1558,7 +1579,6 @@ input.cashflow-item-occ-input{
   .orto-detail-panel{width:100%;}
   .modal-card{padding:20px 18px; max-width:calc(100vw - 32px);}
   .login-screen{padding:16px;}
-  .zoom-controls .btn{padding:6px 10px; font-size:14px;}
   .gantt-labels-col{width:182px;}
 }
 </style>
@@ -1832,7 +1852,7 @@ const KPI_CATALOG = {
     } }
 };
 const DEFAULT_KPI_SELECTION = ["monthlyPriorities","ortoWater","ortoFertilize","netWorth"];
-const APP_VERSION = "v0.91";
+const APP_VERSION = "v0.101";
 const ADMIN_EMAIL = "antonio.calamo@gmail.com";
 // Unico punto in cui si decide chi è admin: da qui in poi ogni "potere speciale" riservato
 // all'admin va controllato con isAdmin(), non ripetendo il confronto con ADMIN_EMAIL in giro.
@@ -2635,6 +2655,11 @@ async function startApp(){
   document.getElementById("boot-loader").style.display="none";
   document.getElementById("login-screen").style.display="none";
   document.getElementById("app-root").style.display="flex";
+  // Mentre l'app era nascosta (display:none), il ridimensionamento automatico dei campi di testo
+  // dei task ha misurato "altezza zero" per tutto (è così che i browser trattano gli elementi
+  // nascosti): il testo era presente ma schiacciato in un'area invisibile. Ora che l'app è
+  // finalmente visibile, ricalcoliamo davvero l'altezza giusta.
+  document.querySelectorAll("textarea").forEach(ta=>autoResize(ta));
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.querySelector('.tab[data-tab="dashboard"]').classList.add("active");
   // Piccolo ritardo per dare tempo allo script accounts.google.com di caricarsi (è async/defer).
@@ -3863,7 +3888,7 @@ function buildDayRow(main, dateStr, isToday, isHistory){
 function sectionLabel(text, color, actionEl){
   const row = el("div",{class:"section-label"},[
     el("span",{class:"section-dot", style:`background:${color}`}),
-    el("span",{style:"flex:1;"}, text)
+    el("span",{class:"section-label-text"}, text)
   ]);
   if(actionEl) row.appendChild(actionEl);
   return row;

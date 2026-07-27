@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>My Ikigai</title>
 <link id="favicon-link" rel="icon" type="image/png" href="">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1555,7 +1555,7 @@ input.cashflow-item-occ-input{
   .orto-detail-panel{width:100%;}
   .modal-card{padding:20px 18px; max-width:calc(100vw - 32px);}
   .login-screen{padding:16px;}
-  .zoom-controls{display:none;}
+  .zoom-controls .btn{padding:6px 10px; font-size:14px;}
   .gantt-labels-col{width:182px;}
 }
 </style>
@@ -1974,7 +1974,7 @@ function applyAppTheme(){
   document.getElementById("login-theme-select").value = appTheme;
 }
 function applyZoom(){
-  document.body.style.zoom = uiZoom;
+  document.getElementById("app-root").style.zoom = uiZoom;
   document.getElementById("zoom-level").textContent = Math.round(uiZoom*100)+"%";
 }
 // Dopo un cambio tema, i colori scelti (indice di palette) vanno ridipinti sul nuovo tema:
@@ -7928,6 +7928,7 @@ function renderMobileMoreSheet(){
 function openMobileMoreSheet(){
   renderMobileMoreSheet();
   document.getElementById("mobile-more-sheet").classList.add("open");
+  repositionMobileNavForViewport();
 }
 function closeMobileMoreSheet(){
   const sheet = document.getElementById("mobile-more-sheet");
@@ -7936,6 +7937,39 @@ function closeMobileMoreSheet(){
 function renderMobileNav(){
   renderMobileBottomBar();
   if(document.getElementById("mobile-more-sheet").classList.contains("open")) renderMobileMoreSheet();
+  repositionMobileNavForViewport();
+}
+// Su mobile, "posizione fissa" nel browser è ancorata alla PAGINA, non allo schermo che si vede
+// davvero quando l'utente zooma con un pizzico. Con la visualViewport API sappiamo sempre qual è
+// la porzione di schermo realmente visibile in quel momento, e riposizioniamo la barra lì, invece
+// di lasciarla scivolare in basso fuori vista quando si zooma.
+function repositionMobileNavForViewport(){
+  const bar = document.getElementById("mobile-bottom-bar");
+  const sheet = document.getElementById("mobile-more-sheet");
+  if(!bar) return;
+  const isMobile = window.matchMedia("(max-width:880px)").matches;
+  if(!isMobile || !window.visualViewport){
+    bar.style.top = ""; bar.style.bottom = "";
+    if(sheet){ sheet.style.top = ""; sheet.style.height = ""; sheet.style.bottom = ""; }
+    return;
+  }
+  const vv = window.visualViewport;
+  const barH = bar.offsetHeight || 64;
+  const visibleBottom = vv.height + vv.offsetTop;
+  bar.style.bottom = "auto";
+  bar.style.top = Math.round(visibleBottom - barH) + "px";
+  if(sheet){
+    sheet.style.bottom = "auto";
+    sheet.style.top = Math.round(vv.offsetTop) + "px";
+    sheet.style.height = Math.round(vv.height) + "px";
+  }
+}
+function setupMobileViewportPin(){
+  if(!window.visualViewport) return;
+  window.visualViewport.addEventListener("resize", repositionMobileNavForViewport);
+  window.visualViewport.addEventListener("scroll", repositionMobileNavForViewport);
+  window.addEventListener("resize", repositionMobileNavForViewport);
+  repositionMobileNavForViewport();
 }
 let builtinTabsEnhanced = false;
 function enhanceBuiltinTabs(){
@@ -8133,6 +8167,7 @@ function render(tab){
   main.querySelectorAll("textarea").forEach(ta=>autoResize(ta));
 }
 
+setupMobileViewportPin();
 initAuth();
 </script>
 </body>

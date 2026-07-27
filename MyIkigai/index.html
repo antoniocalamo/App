@@ -1481,7 +1481,7 @@ input.cashflow-item-occ-input{
     background:var(--card); border-top:1px solid var(--line);
     box-shadow:0 -2px 14px rgba(0,0,0,0.10);
     will-change:transform;
-    -webkit-transform:translateZ(0); -webkit-backface-visibility:hidden;
+    -webkit-transform:translateZ(0);
   }
   .mobile-bottom-bar .tab, .mobile-bottom-bar .mobile-more-btn{
     flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -1493,7 +1493,7 @@ input.cashflow-item-occ-input{
   }
   .mobile-bottom-bar .tab-icon{width:21px; height:21px; margin:0 auto;}
   .mobile-bottom-bar .tab-label{
-    -webkit-line-clamp:1; line-clamp:1; font-size:10.2px; overflow:hidden;
+    font-size:10.2px; overflow:hidden;
     text-overflow:ellipsis; max-width:100%; display:block;
   }
   .mobile-bottom-bar .tab.active{color:var(--forest) !important; background:var(--paper-2) !important;}
@@ -2441,9 +2441,8 @@ async function loadAll(){
   if(!state.dashboard.kpiSelection){
     state.dashboard.kpiSelection = DEFAULT_KPI_SELECTION.slice();
   }
-  if(state.dashboard.widgetsHidden===undefined){
-    state.dashboard.widgetsHidden = window.matchMedia("(max-width:880px)").matches;
-  }
+  if(state.dashboard.widgetsHiddenDesktop===undefined) state.dashboard.widgetsHiddenDesktop = false;
+  if(state.dashboard.widgetsHiddenMobile===undefined) state.dashboard.widgetsHiddenMobile = true;
   if(state.dashboard.kpiSelection.includes("taskPct")){
     state.dashboard.kpiSelection = state.dashboard.kpiSelection.filter(k=>k!=="taskPct");
     if(!state.dashboard.kpiSelection.includes("monthlyPriorities")) state.dashboard.kpiSelection.unshift("monthlyPriorities");
@@ -3705,9 +3704,12 @@ function renderDashboard(main){
   const kpiEditBtn = el("button",{class:"btn ghost small"},"Modifica widget");
   kpiEditBtn.addEventListener("click", openKpiSettingsModal);
   todoActions.appendChild(kpiEditBtn);
-  const widgetsToggleBtn = el("button",{class:"btn ghost small"}, state.dashboard.widgetsHidden ? "Mostra widget" : "Nascondi widget");
+  const isMobileNow = window.matchMedia("(max-width:880px)").matches;
+  const widgetsHiddenNow = isMobileNow ? state.dashboard.widgetsHiddenMobile : state.dashboard.widgetsHiddenDesktop;
+  const widgetsToggleBtn = el("button",{class:"btn ghost small"}, widgetsHiddenNow ? "Mostra widget" : "Nascondi widget");
   widgetsToggleBtn.addEventListener("click", ()=>{
-    state.dashboard.widgetsHidden = !state.dashboard.widgetsHidden;
+    if(isMobileNow) state.dashboard.widgetsHiddenMobile = !state.dashboard.widgetsHiddenMobile;
+    else state.dashboard.widgetsHiddenDesktop = !state.dashboard.widgetsHiddenDesktop;
     store.set(privKey("dashboard"), state.dashboard);
     render("dashboard");
   });
@@ -3778,7 +3780,7 @@ function renderDashboard(main){
   }
   headerWrap.appendChild(subRow);
   main.appendChild(headerWrap);
-  if(!state.dashboard.widgetsHidden) renderStatsBar(main);
+  if(!widgetsHiddenNow) renderStatsBar(main);
 
   main.appendChild(sectionLabel("To Do List", "var(--forest)", todoActions));
 

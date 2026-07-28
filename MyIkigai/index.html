@@ -1305,6 +1305,7 @@ input.cashflow-item-occ-input{
 .history-row textarea.history-col-note:focus{ outline:none; background:var(--card); border-radius:6px; color:var(--ink); }
 .history-row .history-value, .history-row input.history-col-num{ margin-top:2px; }
 .history-value{margin-left:auto; font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--slate);}
+.scroll-hint{display:none;}
 
 /* ---- Backlog boxes ---- */
 .side-card-head{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;}
@@ -1499,6 +1500,12 @@ input.cashflow-item-occ-input{
   .history-row{min-width:700px;}
   .history-col-note{flex:0 0 160px; min-width:160px;}
   .history-row .del{flex-shrink:0;}
+  .scroll-hint{
+    display:flex; align-items:center; gap:5px; font-size:11px; font-style:italic;
+    color:var(--ink-soft); margin-bottom:6px;
+  }
+  .scroll-hint-icon{display:flex; width:14px; height:14px; flex-shrink:0; opacity:.8;}
+  .scroll-hint-icon svg{width:100%; height:100%;}
   html, body{height:auto; overflow:visible;}
   .app{flex-direction:column; height:auto; overflow:visible;}
   .tabs{position:static; height:0; padding:0; margin:0; overflow:visible; min-height:0; max-height:none;}
@@ -2977,6 +2984,16 @@ function emptyState(text, iconSvg){
   return el("div",{class:"empty-state"},[
     el("div",{class:"empty-icon", html:iconSvg||ICON_EMPTY}),
     el("span",{}, text)
+  ]);
+}
+// Piccola nota + icona che appare solo su mobile sopra tabelle/righe che scorrono in
+// orizzontale, per far capire che ci sono altre colonne se si scorre a destra (altrimenti
+// il contenuto in più non è per niente evidente e sembra semplicemente "tagliato").
+const ICON_SCROLL_HINT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6l6 6-6 6"/><path d="M14 6l6 6-6 6" opacity="0.45"/></svg>';
+function scrollHintNote(text){
+  return el("div",{class:"scroll-hint"},[
+    el("span",{class:"scroll-hint-text"}, text||"Scorri per vedere tutte le colonne"),
+    el("span",{class:"scroll-hint-icon", html:ICON_SCROLL_HINT})
   ]);
 }
 function parseItalianNumber(raw){
@@ -7642,6 +7659,7 @@ function renderFinanzeDashboard(main){
   if(!state.finance.history.length){
     histBlock.appendChild(emptyState("Salva il primo snapshot per iniziare a tracciare l'andamento nel tempo.", ICON_COIN));
   } else {
+    histBlock.appendChild(scrollHintNote("Scorri per vedere tutte le colonne"));
     const histTable = el("div",{class:"history-table"});
     const headRow = el("div",{class:"history-row history-row-head"});
     headRow.appendChild(el("span",{class:"history-col-date"},"Data"));

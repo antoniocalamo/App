@@ -242,8 +242,12 @@ h1,h2,h3,.display{font-family:'Fraunces',serif;}
 
 /* ---- Boot loader (mostrato mentre si verifica la sessione, prima di sapere se serve il login) ---- */
 .boot-loader{
-  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
   background:var(--paper); z-index:9999;
+}
+.boot-tagline{
+  font-family:'Inter',sans-serif; font-size:12.5px; font-style:italic; color:var(--ink-soft);
+  max-width:260px; text-align:center; min-height:1em;
 }
 .boot-spinner{
   width:32px; height:32px; border:3px solid var(--line); border-top-color:var(--forest);
@@ -1316,7 +1320,6 @@ input.cashflow-item-occ-input{
 .history-row .history-value, .history-row input.history-col-num{ margin-top:2px; }
 .history-value{margin-left:auto; font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--slate);}
 .scroll-hint{display:none;}
-.scroll-hint-edge{display:none;}
 
 /* ---- Backlog boxes ---- */
 .side-card-head{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;}
@@ -1517,12 +1520,7 @@ input.cashflow-item-occ-input{
   }
   .scroll-hint-icon{display:flex; width:14px; height:14px; flex-shrink:0; opacity:.8;}
   .scroll-hint-icon svg{width:100%; height:100%;}
-  .scroll-hint-edge{
-    display:flex; align-items:center; justify-content:center;
-    position:sticky; right:0; margin-left:auto; flex-shrink:0;
-    width:16px; height:16px; color:var(--ink-soft); opacity:.7;
-  }
-  .scroll-hint-edge svg{width:100%; height:100%;}
+  .scroll-hint-icon-only{margin-bottom:3px;}
   .finance-subnav{flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;}
   .finance-subnav-btn{flex-shrink:0; white-space:nowrap;}
   html, body{height:auto; overflow:visible;}
@@ -1644,6 +1642,7 @@ input.cashflow-item-occ-input{
     width:100%; padding-bottom:4px; gap:10px;
   }
   .todo-header-actions > *{flex-shrink:0; white-space:nowrap;}
+  .todo-actions-wrap{display:flex; flex-direction:column; gap:0;}
   .finance-grid{grid-template-columns:1fr; gap:14px;}
   /* Contenuti larghi: scroll orizzontale dedicato invece di schiacciare tutto */
   .gomme-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
@@ -1657,7 +1656,7 @@ input.cashflow-item-occ-input{
 </style>
 </head>
 <body>
-<div id="boot-loader" class="boot-loader"><div class="boot-spinner"></div></div>
+<div id="boot-loader" class="boot-loader"><div class="boot-spinner"></div><div class="boot-tagline" id="boot-tagline"></div></div>
 <div id="login-screen" class="login-screen" style="display:none;">
   <form id="login-form" class="login-card">
     <div class="brand" style="justify-content:center;margin-bottom:20px;">
@@ -1936,7 +1935,7 @@ const KPI_CATALOG = {
     } }
 };
 const DEFAULT_KPI_SELECTION = ["monthlyPriorities","ortoWater","ortoFertilize","netWorth"];
-const APP_VERSION = "v0.101";
+const APP_VERSION = "v0.115";
 const ADMIN_EMAIL = "antonio.calamo@gmail.com";
 // Unico punto in cui si decide chi è admin: da qui in poi ogni "potere speciale" riservato
 // all'admin va controllato con isAdmin(), non ripetendo il confronto con ADMIN_EMAIL in giro.
@@ -2730,6 +2729,8 @@ async function startApp(){
   applyZoom();
   applyAppTheme();
   currentTagline = state.taglines.length ? state.taglines[Math.floor(Math.random()*state.taglines.length)] : "";
+  const bootTaglineEl = document.getElementById("boot-tagline");
+  if(bootTaglineEl) bootTaglineEl.textContent = currentTagline;
   currentDashTitle = state.dashTitles.length ? state.dashTitles[Math.floor(Math.random()*state.dashTitles.length)] : "";
   applyHiddenBuiltins();
   applyBuiltinLabels();
@@ -3018,12 +3019,13 @@ function scrollHintNote(text){
     el("span",{class:"scroll-hint-icon", html:ICON_SCROLL_HINT})
   ]);
 }
-// Versione "solo icona" per i menù orizzontali scorrevoli (righe di pulsanti/pillole): si
-// aggiunge come ultimo elemento della riga stessa e resta "agganciata" al bordo destro
-// visibile grazie a position:sticky, quindi fa capire che c'è altro da scorrere senza
-// occupare spazio con una frase intera.
-function scrollHintEdgeIcon(){
-  return el("span",{class:"scroll-hint-edge", html:ICON_SCROLL_HINT});
+// Versione "solo icona" per i menù orizzontali scorrevoli (righe di pulsanti/pillole): va
+// messa PRIMA della riga scorrevole (mai dentro), altrimenti si sovrapporrebbe al contenuto
+// invece di stare sopra come indicazione.
+function scrollHintIcon(){
+  return el("div",{class:"scroll-hint scroll-hint-icon-only"},[
+    el("span",{class:"scroll-hint-icon", html:ICON_SCROLL_HINT})
+  ]);
 }
 function parseItalianNumber(raw){
   if(raw==null || raw==="") return 0;
@@ -3891,7 +3893,7 @@ function renderDashboard(main){
   });
   todoActions.appendChild(backlogToggleBtn);
   todoActions.appendChild(buildGcalVisibilityToggle());
-  todoActions.appendChild(scrollHintEdgeIcon());
+  const todoActionsWrap = el("div",{class:"todo-actions-wrap"},[scrollHintIcon(), todoActions]);
 
   const headerWrap = el("div",{class:"dash-header-sticky"});
   const titleRow = el("div",{class:"section-head"});
@@ -3915,7 +3917,7 @@ function renderDashboard(main){
   main.appendChild(headerWrap);
   if(!widgetsHiddenNow) renderStatsBar(main);
 
-  main.appendChild(sectionLabel("To Do List", "var(--forest)", todoActions));
+  main.appendChild(sectionLabel("To Do List", "var(--forest)", todoActionsWrap));
 
   const grid = el("div",{class:"dash-grid"});
   const week = el("div",{class:"week-table"});
@@ -5138,7 +5140,7 @@ function renderCollection(main, opts){
     attachRowDrag(grip, it, ci, state[key], ()=>{ store.set(key, state[key]); render(opts.tab); });
     list.appendChild(it);
   });
-  list.appendChild(scrollHintEdgeIcon());
+  wrap.appendChild(scrollHintIcon());
   wrap.appendChild(list);
 
   const detail = el("div",{class:"coll-detail"});
@@ -6172,7 +6174,7 @@ function renderGomme(main){
     attachRowDrag(grip, it, ii, state.maintenanceItems, ()=>{ store.set("maintenanceItems", state.maintenanceItems); render("gomme"); });
     list.appendChild(it);
   });
-  list.appendChild(scrollHintEdgeIcon());
+  wrap.appendChild(scrollHintIcon());
   wrap.appendChild(list);
 
   const detail = el("div",{class:"coll-detail"});
@@ -6826,7 +6828,7 @@ function renderFinanze(main){
     btn.addEventListener("click", ()=>{ financeSubTab=key; render("finanze"); });
     nav.appendChild(btn);
   });
-  nav.appendChild(scrollHintEdgeIcon());
+  main.appendChild(scrollHintIcon());
   main.appendChild(nav);
   if(financeSubTab==="investimenti") renderFinanzeInvestimenti(main);
   else if(financeSubTab==="flussi") renderFinanzeCashflow(main);

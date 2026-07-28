@@ -1572,6 +1572,7 @@ input.cashflow-item-occ-input{
   }
   .todo-header-actions > *{flex-shrink:0; white-space:nowrap;}
   .finance-grid{grid-template-columns:1fr;}
+  .finance-totals-row{grid-template-columns:1fr; margin:0; gap:12px;}
   /* Contenuti larghi: scroll orizzontale dedicato invece di schiacciare tutto */
   .gomme-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
   table.tires{min-width:640px;}
@@ -7413,9 +7414,11 @@ function renderFinanzeCashflow(main){
 function renderFinanzeDashboard(main){
   const today = new Date();
   const dom = today.getDate();
-  if(dom>=26 && dom<=29){
-    const banner = el("div",{class:"finance-reminder-banner"},
-      "💰 È quasi/è il giorno dello stipendio (27) — ricordati di aggiornare lo storico qui sotto.");
+  if(dom>=25 && dom<=27){
+    const msg = dom===27
+      ? "💰 Oggi è il giorno dello stipendio (27) — ricordati di aggiornare lo storico qui sotto."
+      : "💰 È quasi il giorno dello stipendio (27) — ricordati di aggiornare lo storico qui sotto.";
+    const banner = el("div",{class:"finance-reminder-banner"}, msg);
     main.appendChild(banner);
   }
   const noItems = !state.finance.liquidity.length && !state.finance.nonliquid.length && !state.finance.debts.length;

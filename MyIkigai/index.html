@@ -1306,6 +1306,7 @@ input.cashflow-item-occ-input{
 .history-row .history-value, .history-row input.history-col-num{ margin-top:2px; }
 .history-value{margin-left:auto; font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--slate);}
 .scroll-hint{display:none;}
+.scroll-hint-edge{display:none;}
 
 /* ---- Backlog boxes ---- */
 .side-card-head{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;}
@@ -1502,10 +1503,18 @@ input.cashflow-item-occ-input{
   .history-row .del{flex-shrink:0;}
   .scroll-hint{
     display:flex; align-items:center; gap:5px; font-size:11px; font-style:italic;
-    color:var(--ink-soft); margin-bottom:6px;
+    color:var(--ink-soft); margin-bottom:6px; width:100%; justify-content:flex-end;
   }
   .scroll-hint-icon{display:flex; width:14px; height:14px; flex-shrink:0; opacity:.8;}
   .scroll-hint-icon svg{width:100%; height:100%;}
+  .scroll-hint-edge{
+    display:flex; align-items:center; justify-content:center;
+    position:sticky; right:0; margin-left:auto; flex-shrink:0;
+    width:16px; height:16px; color:var(--ink-soft); opacity:.7;
+  }
+  .scroll-hint-edge svg{width:100%; height:100%;}
+  .finance-subnav{flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .finance-subnav-btn{flex-shrink:0; white-space:nowrap;}
   html, body{height:auto; overflow:visible;}
   .app{flex-direction:column; height:auto; overflow:visible;}
   .tabs{position:static; height:0; padding:0; margin:0; overflow:visible; min-height:0; max-height:none;}
@@ -2996,6 +3005,13 @@ function scrollHintNote(text){
     el("span",{class:"scroll-hint-icon", html:ICON_SCROLL_HINT})
   ]);
 }
+// Versione "solo icona" per i menù orizzontali scorrevoli (righe di pulsanti/pillole): si
+// aggiunge come ultimo elemento della riga stessa e resta "agganciata" al bordo destro
+// visibile grazie a position:sticky, quindi fa capire che c'è altro da scorrere senza
+// occupare spazio con una frase intera.
+function scrollHintEdgeIcon(){
+  return el("span",{class:"scroll-hint-edge", html:ICON_SCROLL_HINT});
+}
 function parseItalianNumber(raw){
   if(raw==null || raw==="") return 0;
   let s = String(raw).trim().replace(/[€\s]/g,"");
@@ -3862,6 +3878,7 @@ function renderDashboard(main){
   });
   todoActions.appendChild(backlogToggleBtn);
   todoActions.appendChild(buildGcalVisibilityToggle());
+  todoActions.appendChild(scrollHintEdgeIcon());
 
   const headerWrap = el("div",{class:"dash-header-sticky"});
   const titleRow = el("div",{class:"section-head"});
@@ -5108,6 +5125,7 @@ function renderCollection(main, opts){
     attachRowDrag(grip, it, ci, state[key], ()=>{ store.set(key, state[key]); render(opts.tab); });
     list.appendChild(it);
   });
+  list.appendChild(scrollHintEdgeIcon());
   wrap.appendChild(list);
 
   const detail = el("div",{class:"coll-detail"});
@@ -6141,6 +6159,7 @@ function renderGomme(main){
     attachRowDrag(grip, it, ii, state.maintenanceItems, ()=>{ store.set("maintenanceItems", state.maintenanceItems); render("gomme"); });
     list.appendChild(it);
   });
+  list.appendChild(scrollHintEdgeIcon());
   wrap.appendChild(list);
 
   const detail = el("div",{class:"coll-detail"});
@@ -6794,6 +6813,7 @@ function renderFinanze(main){
     btn.addEventListener("click", ()=>{ financeSubTab=key; render("finanze"); });
     nav.appendChild(btn);
   });
+  nav.appendChild(scrollHintEdgeIcon());
   main.appendChild(nav);
   if(financeSubTab==="investimenti") renderFinanzeInvestimenti(main);
   else if(financeSubTab==="flussi") renderFinanzeCashflow(main);

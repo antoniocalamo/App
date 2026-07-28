@@ -213,10 +213,6 @@ h1,h2,h3,.display{font-family:'Fraunces',serif;}
   hyphens:auto; -webkit-hyphens:auto; -ms-hyphens:auto;
   overflow-wrap:break-word; word-break:normal;
 }
-/* I nomi delle schede base (Manutenzione, ecc.) passano sempre da qui, mai da testo libero
-   dell'utente: possiamo quindi togliere il fallback "a-capo ovunque", che altrimenti
-   scavalca l'a-capo con trattino anche quando ce ne sarebbe uno valido a disposizione. */
-.tab-label-main{overflow-wrap:normal; word-break:normal;}
 .tab .sub{
   display:block;
   font-family:'Inter',sans-serif;
@@ -1642,7 +1638,7 @@ input.cashflow-item-occ-input{
     width:100%; padding-bottom:4px; gap:10px;
   }
   .todo-header-actions > *{flex-shrink:0; white-space:nowrap;}
-  .todo-actions-wrap{display:flex; flex-direction:column; gap:0;}
+  .todo-actions-wrap{display:flex; flex-direction:column; gap:0; width:100%; min-width:0;}
   .finance-grid{grid-template-columns:1fr; gap:14px;}
   /* Contenuti larghi: scroll orizzontale dedicato invece di schiacciare tutto */
   .gomme-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
@@ -1973,6 +1969,26 @@ const DEFAULT_TAGLINES = [
 const DEFAULT_DASH_TITLES = [
   "Come siamo messi questa settimana?"
 ];
+const DEFAULT_BOOT_PHRASES = [
+  "Preparo il caffè…",
+  "Sveglio i criceti nel motore…",
+  "Un attimo, sto cercando le chiavi…",
+  "Riscaldo i motori…",
+  "Conto le pecore al contrario…"
+];
+// Mostriamo subito una frase (da cache locale se c'è, altrimenti dall'elenco di default),
+// invece di aspettare che tutto lo stato utente sia caricato da Supabase: prima la frase
+// compariva sì, ma solo per un istante proprio prima che la rotella sparisse già a fine
+// caricamento — troppo tardi per essere notata.
+(function(){
+  try{
+    const cached = JSON.parse(localStorage.getItem("bootPhrasesCache")||"null");
+    const list = (Array.isArray(cached) && cached.length) ? cached : DEFAULT_BOOT_PHRASES;
+    const pick = list[Math.floor(Math.random()*list.length)];
+    const el0 = document.getElementById("boot-tagline");
+    if(el0) el0.textContent = pick;
+  }catch(e){}
+})();
 const STANDARD_ICONS = {
   list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
   pencil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
@@ -2188,7 +2204,7 @@ const store = {
   }
 };
 
-let state = { dashboard:null, orto:null, trips:null, bbqs:null, tires:null, finance:null, sharedBoards:null, customTabs:null, customTabsPrivate:null, hiddenBuiltins:null, taglines:null, dashTitles:null, gommeLayout:null, builtinLabels:null, accountSettings:null, maintenanceItems:null, googleCalendar:null, projectAssignees:null, ortoWeatherLocation:null, mobilePinned:null };
+let state = { dashboard:null, orto:null, trips:null, bbqs:null, tires:null, finance:null, sharedBoards:null, customTabs:null, customTabsPrivate:null, hiddenBuiltins:null, taglines:null, dashTitles:null, bootPhrases:null, gommeLayout:null, builtinLabels:null, accountSettings:null, maintenanceItems:null, googleCalendar:null, projectAssignees:null, ortoWeatherLocation:null, mobilePinned:null };
 let activeTrip = null, activeBbq = null, activeSharedBoard = null, activeProject = null;
 let activeMaintenanceItem = null;
 let goodThingPick = null;
@@ -2217,6 +2233,7 @@ let currentRenderedTab = "dashboard";
 const STATE_KEY_MAP_SHARED = {
   orto:"orto", trips:"trips", bbqs:"bbqs", tires:"tires",
   sharedBoards:"sharedBoards", customTabs:"customTabs", taglines:"taglines", dashTitles:"dashTitles",
+  bootPhrases:"bootPhrases",
   maintenanceItems:"maintenanceItems"
 };
 const STATE_KEY_MAP_PRIVATE = {
@@ -2697,6 +2714,8 @@ async function loadAll(){
   appTheme = await store.get(privKey("appTheme"), "ikigai");
   state.taglines = await store.get("taglines", DEFAULT_TAGLINES);
   state.dashTitles = await store.get("dashTitles", DEFAULT_DASH_TITLES);
+  state.bootPhrases = await store.get("bootPhrases", DEFAULT_BOOT_PHRASES);
+  try{ localStorage.setItem("bootPhrasesCache", JSON.stringify(state.bootPhrases)); }catch(e){}
   state.accountSettings = await store.get(privKey("accountSettings"), {notifyFinance27:false});
   state.googleCalendar = await store.get(privKey("googleCalendar"), {connected:false, email:null});
 }
@@ -2729,8 +2748,6 @@ async function startApp(){
   applyZoom();
   applyAppTheme();
   currentTagline = state.taglines.length ? state.taglines[Math.floor(Math.random()*state.taglines.length)] : "";
-  const bootTaglineEl = document.getElementById("boot-tagline");
-  if(bootTaglineEl) bootTaglineEl.textContent = currentTagline;
   currentDashTitle = state.dashTitles.length ? state.dashTitles[Math.floor(Math.random()*state.dashTitles.length)] : "";
   applyHiddenBuiltins();
   applyBuiltinLabels();
@@ -3588,6 +3605,29 @@ function openTaglinesModal(){
     modal.appendChild(actions);
   });
 }
+function openBootPhrasesModal(){
+  openModal((modal, close)=>{
+    modal.appendChild(el("h3",{},"Frasi schermata di caricamento"));
+    modal.appendChild(el("div",{style:"font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;"},"Una viene scelta a caso a ogni caricamento dell'app, sotto la rotellina. Un elemento per riga."));
+    const ta = el("textarea",{rows:"10", style:"font-size:13px;"});
+    ta.value = state.bootPhrases.join("\n");
+    modal.appendChild(ta);
+    const actions = el("div",{class:"modal-actions"});
+    const cancelBtn = el("button",{class:"btn ghost"},"Annulla");
+    cancelBtn.addEventListener("click", close);
+    const saveBtn = el("button",{class:"btn primary"},"Salva");
+    saveBtn.addEventListener("click", ()=>{
+      const lines = ta.value.split("\n").map(l=>l.trim()).filter(l=>l.length);
+      if(!lines.length) return;
+      state.bootPhrases = lines;
+      store.set("bootPhrases", state.bootPhrases);
+      try{ localStorage.setItem("bootPhrasesCache", JSON.stringify(state.bootPhrases)); }catch(e){}
+      close();
+    });
+    actions.appendChild(cancelBtn); actions.appendChild(saveBtn);
+    modal.appendChild(actions);
+  });
+}
 function openAccountSettingsModal(){
   openModal((modal, close)=>{
     modal.appendChild(el("h3",{},"Impostazioni account"));
@@ -3643,6 +3683,9 @@ function openAccountSettingsModal(){
       linkList.appendChild(el("div",{style:"font-size:11px;"}, "log di autenticazione e delle chiamate API (filtra per \"auth\" in alto)."));
       adminBox.appendChild(linkList);
       modal.appendChild(adminBox);
+      const bootPhrasesBtn = el("button",{class:"btn ghost", style:"margin-top:10px;"},"Modifica frasi schermata di caricamento");
+      bootPhrasesBtn.addEventListener("click", ()=>{ close(); openBootPhrasesModal(); });
+      modal.appendChild(bootPhrasesBtn);
     }
 
     const actions = el("div",{class:"modal-actions"});
@@ -5087,6 +5130,7 @@ function renderCollection(main, opts){
     opts.titleEl || el("h1",{},title),
     el("span",{class:"tag"},state[key].length+" "+nounPlural)
   ]));
+  main.appendChild(scrollHintIcon());
   const wrap = el("div",{class:"collection"});
   const list = el("div",{class:"coll-list"});
   const newBtn = el("button",{class:"btn primary"}, newBtnLabel);
@@ -5140,7 +5184,6 @@ function renderCollection(main, opts){
     attachRowDrag(grip, it, ci, state[key], ()=>{ store.set(key, state[key]); render(opts.tab); });
     list.appendChild(it);
   });
-  wrap.appendChild(scrollHintIcon());
   wrap.appendChild(list);
 
   const detail = el("div",{class:"coll-detail"});
@@ -6124,6 +6167,7 @@ function renderGomme(main){
     el("span",{class:"tag"}, state.maintenanceItems.length+" sotto schede")
   ]));
 
+  main.appendChild(scrollHintIcon());
   const wrap = el("div",{class:"collection"});
   const list = el("div",{class:"coll-list"});
   const newBtn = el("button",{class:"btn primary"}, "+ Nuova sotto-scheda");
@@ -6174,7 +6218,6 @@ function renderGomme(main){
     attachRowDrag(grip, it, ii, state.maintenanceItems, ()=>{ store.set("maintenanceItems", state.maintenanceItems); render("gomme"); });
     list.appendChild(it);
   });
-  wrap.appendChild(scrollHintIcon());
   wrap.appendChild(list);
 
   const detail = el("div",{class:"coll-detail"});

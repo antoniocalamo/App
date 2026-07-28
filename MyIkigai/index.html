@@ -1495,6 +1495,10 @@ input.cashflow-item-occ-input{
   .invest-order-type{width:auto; order:3; margin-left:auto;}
   .invest-order-qty{order:4; flex:1 1 100%;}
   .invest-order-total{order:5; margin-left:auto;}
+  .history-table{overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:6px;}
+  .history-row{min-width:700px;}
+  .history-col-note{flex:0 0 160px; min-width:160px;}
+  .history-row .del{flex-shrink:0;}
   html, body{height:auto; overflow:visible;}
   .app{flex-direction:column; height:auto; overflow:visible;}
   .tabs{position:static; height:0; padding:0; margin:0; overflow:visible; min-height:0; max-height:none;}
@@ -1571,8 +1575,13 @@ input.cashflow-item-occ-input{
   }
   .topbar-mobile-brand{display:flex; align-items:center; gap:8px;}
   .topbar-mobile-logo{display:flex; width:36px; height:36px;}
+  .topbar-mobile-brand-text{display:flex; flex-direction:column; gap:1px; min-width:0;}
   .topbar-mobile-name{
     font-family:'Fraunces',serif; font-weight:700; font-size:16px; color:var(--forest); white-space:nowrap;
+  }
+  .topbar-mobile-tagline{
+    font-family:'Inter',sans-serif; font-size:9.5px; font-style:italic; color:var(--ink-soft);
+    line-height:1.2; max-width:150px;
   }
   .topbar-content{
     display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:flex-end;
@@ -1699,9 +1708,20 @@ input.cashflow-item-occ-input{
     <div class="topbar">
       <div class="topbar-mobile-brand">
         <div class="topbar-mobile-logo brand-mark"><img id="topbar-logo-img" alt=""></div>
-        <div class="topbar-mobile-name">My Ikigai</div>
+        <div class="topbar-mobile-brand-text">
+          <div class="topbar-mobile-name">My Ikigai</div>
+          <div class="topbar-mobile-tagline" id="topbar-mobile-tagline"></div>
+        </div>
       </div>
       <div class="topbar-content">
+      <div class="topbar-row topbar-row-version">
+        <div id="app-version" class="app-version"></div>
+      </div>
+      <div class="topbar-row topbar-row-account">
+        <div id="user-email" class="user-email"></div>
+        <span id="account-settings-btn" class="account-settings-btn" title="Impostazioni account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 13a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V19a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
+        <button id="logout-btn" class="btn ghost small">Esci</button>
+      </div>
       <div class="topbar-row topbar-row-controls">
         <select id="app-theme-select" class="theme-select" title="Cambia stile grafico">
           <option value="ikigai">🌸 Ikigai</option>
@@ -1714,14 +1734,6 @@ input.cashflow-item-occ-input{
           <span id="zoom-level" class="zoom-level">100%</span>
           <button id="zoom-in-btn" class="btn ghost small" title="Aumenta zoom">+</button>
         </div>
-      </div>
-      <div class="topbar-row topbar-row-account">
-        <div id="user-email" class="user-email"></div>
-        <span id="account-settings-btn" class="account-settings-btn" title="Impostazioni account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 13a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V19a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
-        <button id="logout-btn" class="btn ghost small">Esci</button>
-      </div>
-      <div class="topbar-row topbar-row-version">
-        <div id="app-version" class="app-version"></div>
       </div>
       </div>
     </div>
@@ -2041,6 +2053,7 @@ function applyAppTheme(){
   document.getElementById("topbar-logo-img").src = logoSrc;
   document.getElementById("favicon-link").href = logoSrc;
   document.getElementById("brand-tagline").textContent = def.sub;
+  document.getElementById("topbar-mobile-tagline").textContent = def.sub;
   document.getElementById("app-theme-select").value = appTheme;
   document.getElementById("login-theme-select").value = appTheme;
 }

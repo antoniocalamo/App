@@ -311,6 +311,7 @@ h1,h2,h3,.display{font-family:'Fraunces',serif;}
   padding:12px 44px 8px 20px; flex-shrink:0;
 }
 .topbar-mobile-logo{display:none;}
+.topbar-mobile-brand{display:none;}
 .topbar-content{
   display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex:1; min-width:0;
 }
@@ -1568,7 +1569,11 @@ input.cashflow-item-occ-input{
     align-items:center;
     padding:14px 16px 0 16px;
   }
+  .topbar-mobile-brand{display:flex; align-items:center; gap:8px;}
   .topbar-mobile-logo{display:flex; width:36px; height:36px;}
+  .topbar-mobile-name{
+    font-family:'Fraunces',serif; font-weight:700; font-size:16px; color:var(--forest); white-space:nowrap;
+  }
   .topbar-content{
     display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:flex-end;
     row-gap:8px; column-gap:10px;
@@ -1692,7 +1697,10 @@ input.cashflow-item-occ-input{
   </nav>
   <div class="main-wrap">
     <div class="topbar">
-      <div class="topbar-mobile-logo brand-mark"><img id="topbar-logo-img" alt=""></div>
+      <div class="topbar-mobile-brand">
+        <div class="topbar-mobile-logo brand-mark"><img id="topbar-logo-img" alt=""></div>
+        <div class="topbar-mobile-name">My Ikigai</div>
+      </div>
       <div class="topbar-content">
       <div class="topbar-row topbar-row-controls">
         <select id="app-theme-select" class="theme-select" title="Cambia stile grafico">

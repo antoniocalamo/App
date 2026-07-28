@@ -1470,6 +1470,20 @@ input.cashflow-item-occ-input{
 .tab.dragging{opacity:.5;}
 
 @media (max-width: 880px){
+  .invest-row{
+    grid-template-columns:1fr 1fr;
+    grid-template-areas:
+      "main main"
+      "qty value"
+      "pnl pnl"
+      "actions actions";
+    gap:8px 14px;
+  }
+  .invest-row-main{grid-area:main;}
+  .invest-qty{grid-area:qty; text-align:left;}
+  .invest-value{grid-area:value;}
+  .invest-pnl{grid-area:pnl; text-align:left;}
+  .invest-row-actions{grid-area:actions; justify-content:flex-start; flex-wrap:wrap; justify-self:start;}
   html, body{height:auto; overflow:visible;}
   .app{flex-direction:column; height:auto; overflow:visible;}
   .tabs{position:static; height:0; padding:0; margin:0; overflow:visible; min-height:0; max-height:none;}
@@ -1644,7 +1658,7 @@ input.cashflow-item-occ-input{
     </button>
     <button class="tab custom-tab" data-c="gomme" data-tab="gomme" data-builtin="gomme">
       <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></span>
-      <span class="tab-label"><span class="tab-label-main">Manuten&shy;zione</span></span>
+      <span class="tab-label"><span class="tab-label-main">Manutenzione</span></span>
     </button>
     <button class="tab custom-tab" data-c="progetti" data-tab="progetti" data-builtin="progetti">
       <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h6M7 13h10M7 17h4"/></svg></span>

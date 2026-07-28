@@ -4581,6 +4581,7 @@ function renderOrto(main){
   layoutWrap.appendChild(renderOrtoDetailPanel(selectedPlant));
   main.appendChild(layoutWrap);
 
+  main.appendChild(scrollHintNote("Scorri per vedere tutti i mesi"));
   main.appendChild(renderOrtoCalendar());
 }
 function renderOrtoDetailPanel(obj){
@@ -5181,6 +5182,7 @@ function renderGenericTable(container, item, onSave){
   });
   container.appendChild(addColBtn);
 
+  container.appendChild(scrollHintNote("Scorri per vedere tutte le colonne"));
   const wrap = el("div",{style:"overflow-x:auto;"});
   const table = el("table",{class:"tires card"});
   const colgroup = el("colgroup");
@@ -5804,6 +5806,7 @@ function renderProjectTable(detail, project, tasks){
   });
 
   wrap.appendChild(table);
+  detail.appendChild(scrollHintNote("Scorri per vedere tutte le colonne"));
   detail.appendChild(wrap);
 }
 function renderProjectDetail(detail, project){

@@ -2277,6 +2277,16 @@ function restoreSnapshot(storeKey, value, targetTab){
   const privPrefix = "priv:"+(currentUser?currentUser.id:"")+":";
   if(storeKey === privPrefix+"appTheme"){ appTheme = value; applyAppTheme(); refreshThemeColoredUI(); }
   else if(storeKey === privPrefix+"uiZoom"){ uiZoom = value; applyZoom(); }
+  else if(storeKey === "projects"){
+    // "projects" contiene solo la parte condivisa: la cronologia Undo/Redo la tratta come una
+    // chiave a sé, ma in memoria è unita ai progetti privati dell'utente in un solo array — quindi
+    // ripristiniamo solo la parte condivisa, lasciando intatta quella privata già in memoria.
+    state.projects = value.concat((state.projects||[]).filter(p=>p.private));
+  }
+  else if(storeKey === privPrefix+"projects"){
+    value.forEach(p=>{ p.private = true; });
+    state.projects = (state.projects||[]).filter(p=>!p.private).concat(value);
+  }
   else if(storeKey.indexOf(privPrefix)===0){
     const stripped = storeKey.slice(privPrefix.length);
     if(STATE_KEY_MAP_PRIVATE[stripped]) state[STATE_KEY_MAP_PRIVATE[stripped]] = value;

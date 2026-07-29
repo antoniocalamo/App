@@ -8,7 +8,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{
@@ -2602,9 +2601,56 @@ function migrateGommeToTable(){
   }
 }
 
+const _NOTFOUND = {__notfound__:true};
 async function loadAll(){
   customTabData = {}; activeCustomItem = {};
-  state.dashboard = await store.get(privKey("dashboard"), DEFAULTS.dashboard);
+
+  // Le ~28 chiamate qui sotto sono quasi tutte indipendenti tra loro: prima venivano fatte una
+  // alla volta con "await" in sequenza (ognuna aspettava che finisse la precedente), sommando
+  // decine di andata-e-ritorno di rete una via l'altra. Qui partono tutte insieme con Promise.all,
+  // e tutte le stesse correzioni/migrazioni di prima vengono applicate subito dopo, nello stesso
+  // identico ordine relativo di prima — cambia solo il "quando arrivano i dati", non la logica.
+  const [
+    dashboardRaw, ortoRaw, weatherLocationRaw, ortoWeatherLocationRaw,
+    tripsRaw, bbqsRaw, tiresRaw, maintenanceItemsRaw,
+    financeRaw, sharedBoardsRaw, projectsRaw, projectsPrivateRaw,
+    projectAssigneesRaw, customTabsRaw, customTabsPrivateRaw,
+    hiddenBuiltinsRaw, builtinLabelsRaw, builtinColorsRaw, builtinIconsRaw,
+    builtinOrderRaw, mobilePinnedRaw, gommeLayoutRaw, uiZoomRaw, appThemeRaw,
+    taglinesRaw, dashTitlesRaw, bootPhrasesRaw, accountSettingsRaw, googleCalendarRaw
+  ] = await Promise.all([
+    store.get(privKey("dashboard"), DEFAULTS.dashboard),
+    store.get("orto", DEFAULTS.orto),
+    store.get("weatherLocation", DEFAULTS.weatherLocation),
+    store.get("ortoWeatherLocation", _NOTFOUND),
+    store.get("trips", DEFAULTS.trips),
+    store.get("bbqs", DEFAULTS.bbqs),
+    store.get("tires", DEFAULTS.tires),
+    store.get("maintenanceItems", [{id:"tires", name:"Gomme", type:"tires", created:new Date().toLocaleDateString("it-IT")}]),
+    store.get(privKey("finance"), DEFAULTS.finance),
+    store.get("sharedBoards", DEFAULTS.sharedBoards),
+    store.get("projects", DEFAULTS.projects),
+    store.get(privKey("projects"), []),
+    store.get("projectAssignees", []),
+    store.get("customTabs", []),
+    store.get(privKey("customTabs"), []),
+    store.get(privKey("hiddenBuiltins"), []),
+    store.get(privKey("builtinLabels"), {}),
+    store.get(privKey("builtinColors"), {}),
+    store.get(privKey("builtinIcons"), {}),
+    store.get(privKey("builtinOrder"), []),
+    store.get(privKey("mobilePinned"), ["progetti","gomme"]),
+    store.get(privKey("gommeLayout"), {colWidths:{}, rowHeights:{}}),
+    store.get(privKey("uiZoom"), 1),
+    store.get(privKey("appTheme"), "ikigai"),
+    store.get("taglines", DEFAULT_TAGLINES),
+    store.get("dashTitles", DEFAULT_DASH_TITLES),
+    store.get("bootPhrases", DEFAULT_BOOT_PHRASES),
+    store.get(privKey("accountSettings"), {notifyFinance27:false}),
+    store.get(privKey("googleCalendar"), {connected:false, email:null})
+  ]);
+
+  state.dashboard = dashboardRaw;
   if(!state.dashboard.backlogBoxes){
     state.dashboard.backlogBoxes = [
       {id:"bx1", title:"Domestic Finance", icon:"coin", items: state.dashboard.finance || []},
@@ -2655,7 +2701,8 @@ async function loadAll(){
   }
   pruneOldDays(state.dashboard.days);
   store.setQuiet(privKey("dashboard"), state.dashboard);
-  state.orto = await store.get("orto", DEFAULTS.orto);
+
+  state.orto = ortoRaw;
   if(state.orto.lastWatered===undefined) state.orto.lastWatered = "";
   if(state.orto.lastFertilized===undefined) state.orto.lastFertilized = "";
   if(!state.orto.objects){
@@ -2684,16 +2731,18 @@ async function loadAll(){
     state.orto.migratedAbsCoords = true;
     store.setQuiet("orto", state.orto);
   }
-  state.weatherLocation = await store.get("weatherLocation", DEFAULTS.weatherLocation);
+
+  state.weatherLocation = weatherLocationRaw;
   // Posizione meteo separata per l'Orto: la prima volta parte allineata a quella di Home
   // (comportamento precedente), da qui in poi le due si possono scostare liberamente.
-  state.ortoWeatherLocation = await store.get("ortoWeatherLocation", state.weatherLocation);
-  state.trips = migrateSubItemTypes(await store.get("trips", DEFAULTS.trips));
-  state.bbqs = migrateSubItemTypes(await store.get("bbqs", DEFAULTS.bbqs));
-  state.tires = await store.get("tires", DEFAULTS.tires);
-  state.maintenanceItems = migrateSubItemTypes(await store.get("maintenanceItems", [{id:"tires", name:"Gomme", type:"tires", created:new Date().toLocaleDateString("it-IT")}]));
+  state.ortoWeatherLocation = (ortoWeatherLocationRaw && ortoWeatherLocationRaw.__notfound__) ? state.weatherLocation : ortoWeatherLocationRaw;
+
+  state.trips = migrateSubItemTypes(tripsRaw);
+  state.bbqs = migrateSubItemTypes(bbqsRaw);
+  state.tires = tiresRaw;
+  state.maintenanceItems = migrateSubItemTypes(maintenanceItemsRaw);
   migrateGommeToTable();
-  state.finance = await store.get(privKey("finance"), DEFAULTS.finance);
+  state.finance = financeRaw;
   if(!state.finance.cashflow || !state.finance.cashflow.incomes){ state.finance.cashflow = {incomes:[], expenses:[]}; }
   if(!state.finance.investments) state.finance.investments = [];
   if(state.finance.investAutoPriceEnabled===undefined) state.finance.investAutoPriceEnabled = false;
@@ -2725,9 +2774,9 @@ async function loadAll(){
     state.finance.investments = order.map(k=>merged[k]);
     store.setQuiet(privKey("finance"), state.finance);
   }
-  state.sharedBoards = migrateSubItemTypes(await store.get("sharedBoards", DEFAULTS.sharedBoards));
-  state.projects = await store.get("projects", DEFAULTS.projects);
-  state.projectsPrivate = await store.get(privKey("projects"), []);
+  state.sharedBoards = migrateSubItemTypes(sharedBoardsRaw);
+  state.projects = projectsRaw;
+  state.projectsPrivate = projectsPrivateRaw;
   state.projectsPrivate.forEach(p=>{ p.private = true; });
   state.projects = state.projects.concat(state.projectsPrivate);
   state.projects.forEach(p=>((p.data&&p.data.tasks)||[]).forEach(t=>{
@@ -2741,7 +2790,7 @@ async function loadAll(){
     if(t.budget===undefined) t.budget = null;
     if(t.actualCost===undefined) t.actualCost = null;
   }));
-  state.projectAssignees = await store.get("projectAssignees", []);
+  state.projectAssignees = projectAssigneesRaw;
   // pulizia una tantum: "Io"/"Moglie" erano i valori fissi della versione precedente,
   // ora sostituiti da suggerimenti a testo libero scelti dall'utente
   const cleanedAssignees = state.projectAssignees.filter(n=> !["io","moglie"].includes(String(n).trim().toLowerCase()));
@@ -2749,26 +2798,26 @@ async function loadAll(){
     state.projectAssignees = cleanedAssignees;
     store.setQuiet("projectAssignees", state.projectAssignees);
   }
-  state.customTabs = await store.get("customTabs", []);
+  state.customTabs = customTabsRaw;
   state.customTabs.forEach(t=>migrateColorField(t, "color"));
-  state.customTabsPrivate = await store.get(privKey("customTabs"), []);
+  state.customTabsPrivate = customTabsPrivateRaw;
   state.customTabsPrivate.forEach(t=>migrateColorField(t, "color"));
-  state.hiddenBuiltins = await store.get(privKey("hiddenBuiltins"), []);
-  state.builtinLabels = await store.get(privKey("builtinLabels"), {});
-  state.builtinColors = await store.get(privKey("builtinColors"), {});
+  state.hiddenBuiltins = hiddenBuiltinsRaw;
+  state.builtinLabels = builtinLabelsRaw;
+  state.builtinColors = builtinColorsRaw;
   Object.keys(state.builtinColors).forEach(k=>migrateColorField(state.builtinColors, k));
-  state.builtinIcons = await store.get(privKey("builtinIcons"), {});
-  state.builtinOrder = await store.get(privKey("builtinOrder"), []);
-  state.mobilePinned = await store.get(privKey("mobilePinned"), ["progetti","gomme"]);
-  state.gommeLayout = await store.get(privKey("gommeLayout"), {colWidths:{}, rowHeights:{}});
-  uiZoom = await store.get(privKey("uiZoom"), 1);
-  appTheme = await store.get(privKey("appTheme"), "ikigai");
-  state.taglines = await store.get("taglines", DEFAULT_TAGLINES);
-  state.dashTitles = await store.get("dashTitles", DEFAULT_DASH_TITLES);
-  state.bootPhrases = await store.get("bootPhrases", DEFAULT_BOOT_PHRASES);
+  state.builtinIcons = builtinIconsRaw;
+  state.builtinOrder = builtinOrderRaw;
+  state.mobilePinned = mobilePinnedRaw;
+  state.gommeLayout = gommeLayoutRaw;
+  uiZoom = uiZoomRaw;
+  appTheme = appThemeRaw;
+  state.taglines = taglinesRaw;
+  state.dashTitles = dashTitlesRaw;
+  state.bootPhrases = bootPhrasesRaw;
   try{ localStorage.setItem("bootPhrasesCache", JSON.stringify(state.bootPhrases)); }catch(e){}
-  state.accountSettings = await store.get(privKey("accountSettings"), {notifyFinance27:false});
-  state.googleCalendar = await store.get(privKey("googleCalendar"), {connected:false, email:null});
+  state.accountSettings = accountSettingsRaw;
+  state.googleCalendar = googleCalendarRaw;
 }
 
 /* ---------------- auth ---------------- */
@@ -6402,9 +6451,11 @@ function openAmortizationModal(item, onSave){
       fileInput.addEventListener("change", ()=>{
         const file = fileInput.files[0];
         if(!file) return;
+        ensureXLSXLoaded().catch(()=>{});
         const reader = new FileReader();
-        reader.onload = (e)=>{
+        reader.onload = async (e)=>{
           try{
+            await ensureXLSXLoaded();
             const wb = XLSX.read(e.target.result, {type:"array", cellDates:true});
             const sheet = wb.Sheets[wb.SheetNames[0]];
             excelRows = normalizeSheetRows(XLSX.utils.sheet_to_json(sheet, {header:1, raw:true}));
@@ -6828,6 +6879,22 @@ function renderFinanceChart(fullHistory){
   wrap.appendChild(el("div",{class:"chart-legend-hint"},"clicca una voce della legenda per nascondere/mostrare quella linea"));
   return wrap;
 }
+// La libreria xlsx (usata solo per leggere file Excel/CSV in import puntuali) non viene più
+// caricata ad ogni apertura dell'app: pesa parecchio e serve solo occasionalmente. Viene scaricata
+// la prima volta che serve davvero, qui, invece che bloccare il caricamento iniziale della pagina.
+let _xlsxLoadPromise = null;
+function ensureXLSXLoaded(){
+  if(window.XLSX) return Promise.resolve();
+  if(_xlsxLoadPromise) return _xlsxLoadPromise;
+  _xlsxLoadPromise = new Promise((resolve, reject)=>{
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+    s.onload = ()=>resolve();
+    s.onerror = ()=>{ _xlsxLoadPromise = null; reject(new Error("Impossibile caricare la libreria per leggere il file Excel. Controlla la connessione e riprova.")); };
+    document.head.appendChild(s);
+  });
+  return _xlsxLoadPromise;
+}
 function normalizeSheetRows(rows){
   // Quando un CSV usa ";" come separatore di campo, XLSX a volte non lo riconosce e
   // restituisce l'intera riga come un'unica cella: qui la spacchiamo noi nelle colonne reali.
@@ -6906,9 +6973,11 @@ function openFinanceImportModal(){
     fileInput.addEventListener("change", ()=>{
       const file = fileInput.files[0];
       if(!file) return;
+      ensureXLSXLoaded().catch(()=>{});
       const reader = new FileReader();
-      reader.onload = (e)=>{
+      reader.onload = async (e)=>{
         try{
+          await ensureXLSXLoaded();
           const wb = XLSX.read(e.target.result, {type:"array", cellDates:true});
           const sheet = wb.Sheets[wb.SheetNames[0]];
           const rows = normalizeSheetRows(XLSX.utils.sheet_to_json(sheet, {header:1, raw:true}));

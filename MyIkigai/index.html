@@ -822,16 +822,23 @@ input.pack-num{
 .take-flag.active{color:var(--leaf); opacity:1;}
 .pack-item.not-needed{opacity:.5;}
 
-/* ---- Gomme table ---- */
-table.tires{width:100%; border-collapse:collapse; font-size:13.5px; table-layout:fixed;}
-table.tires th{
-  text-align:left; font-family:'Fraunces',serif; font-size:13px; color:var(--forest);
-  border-bottom:2px solid var(--line); padding:8px 14px 8px 10px; overflow:hidden;
+/* ---- Tabella generica (Gomme, Manutenzione, sotto-schede "Tabella") — <div> flessibili ---- */
+.gen-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch; touch-action:pan-x;}
+.gen-table{display:flex; flex-direction:column; font-size:13.5px;}
+.gen-row{display:flex;}
+.gen-row-head{
+  font-family:'Fraunces',serif; font-size:13px; color:var(--forest);
+  border-bottom:2px solid var(--line);
 }
-table.tires td{padding:6px 10px; border-bottom:1px solid var(--line); vertical-align:top; overflow:hidden;}
-.tires-sticky-col{position:sticky; left:0; z-index:2; background:var(--card); border-right:1px solid var(--line);}
-table.tires input[type=text], table.tires input[type=date]{font-size:13px; padding:4px 6px; width:100%;}
-table.tires textarea.gomme-cell{
+.gen-row:not(.gen-row-head){border-bottom:1px solid var(--line);}
+.gen-cell{box-sizing:border-box; padding:8px 14px 8px 10px; position:relative; overflow:hidden; flex-shrink:0;}
+.gen-row:not(.gen-row-head) .gen-cell{padding:6px 10px; vertical-align:top;}
+.gen-cell-del{
+  box-sizing:border-box; flex:0 0 36px; width:36px; position:relative;
+  display:flex; align-items:center; justify-content:center; padding:4px;
+}
+.gen-cell input[type=text], .gen-cell input[type=date]{font-size:13px; padding:4px 6px; width:100%;}
+.gen-cell textarea.gomme-cell{
   font-size:13px; padding:4px 6px; width:100%; border:1px solid var(--line); border-radius:6px;
   resize:none; overflow:hidden; font-family:'Inter',sans-serif; color:var(--ink); background:var(--card);
 }
@@ -1645,8 +1652,6 @@ input.cashflow-item-occ-input{
   .todo-actions-wrap{display:flex; flex-direction:column; gap:0; width:100%; min-width:0;}
   .finance-grid{grid-template-columns:1fr; gap:14px;}
   /* Contenuti larghi: scroll orizzontale dedicato invece di schiacciare tutto */
-  .gomme-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch; touch-action:pan-x;}
-  table.tires{width:auto; min-width:640px;}
   .orto-layout{flex-direction:column;}
   .orto-detail-panel{width:100%;}
   .modal-card{padding:20px 18px; max-width:calc(100vw - 32px);}
@@ -2560,7 +2565,7 @@ function migrateGommeToTable(){
   }
   // Sistemazione una tantum: "Intervento" come prima colonna al posto di "Treno", così sui
   // telefoni la colonna che resta fissa durante lo scroll orizzontale è quella più identificativa
-  // (vedi tires-sticky-col in renderGenericTable), non un numero senza contesto.
+  // (la colonna fissa in mobile è stata temporaneamente rimossa e verrà rivista in seguito).
   if(target.columns){
     const ti = target.columns.findIndex(c=>c.id==="treno");
     const ii = target.columns.findIndex(c=>c.id==="intervento");
@@ -5330,8 +5335,11 @@ function openNewProjectModal(namePromptLabel, onCreate){
   });
 }
 // Tabella generica riusabile (sotto schede "Tabella" e, con dati propri, il tab Manutenzione).
-// Ricalca lo stile e il comportamento della tabella storica di Gomme: resize di colonne/righe
-// senza re-render continuo, re-render solo sulle modifiche strutturali (righe/colonne aggiunte o tolte).
+// Riscritta con <div> in stile flessibile (stessa architettura della tabella "Storico snapshot"
+// di Finanze) invece di un vero elemento HTML <table>: quest'ultimo, in combinazione con lo
+// scroll orizzontale annidato dell'app su mobile, impediva lo scorrimento touch (si bloccava
+// e tornava sempre alla posizione iniziale). La versione a <div> replica esattamente lo stesso
+// meccanismo già verificato funzionante sul telefono nella tabella di Finanze.
 function renderGenericTable(container, item, onSave){
   if(!item.columns || !item.columns.length) item.columns = [{id:"col"+Date.now(), label:"Colonna 1", width:200}];
   if(!item.rows) item.rows = [];
@@ -5348,25 +5356,20 @@ function renderGenericTable(container, item, onSave){
   container.appendChild(addColBtn);
 
   container.appendChild(scrollHintNote("Scorri per vedere tutte le colonne"));
-  const wrap = el("div",{class:"gomme-table-wrap", style:"overflow-x:auto;"});
-  const table = el("table",{class:"tires card"});
-  const colgroup = el("colgroup");
-  const cols = {};
-  item.columns.forEach(col=>{
-    const c = el("col",{style:`width:${col.width||160}px;`});
-    cols[col.id] = c;
-    colgroup.appendChild(c);
-  });
-  colgroup.appendChild(el("col",{style:"width:36px;"}));
-  table.appendChild(colgroup);
+  const wrap = el("div",{class:"gen-table-wrap"});
+  const DEL_COL_W = 36;
+  const totalW = item.columns.reduce((sum,col)=>sum+(col.width||160), 0) + DEL_COL_W;
+  const table = el("div",{class:"gen-table card", style:`min-width:${totalW}px;`});
+  const cellEls = {};
 
-  const headRow = el("tr");
+  const headRow = el("div",{class:"gen-row gen-row-head"});
   item.columns.forEach((col,ci)=>{
-    const th = el("th",{class: ci===0 ? "tires-sticky-col" : "", style: ci===0 ? "padding-right:26px;" : "position:relative; padding-right:26px;"});
+    const cell = el("div",{class:"gen-cell", style:`flex:0 0 ${col.width||160}px; width:${col.width||160}px;`});
+    cellEls[col.id] = cell;
     const labelInput = el("input",{type:"text", value:col.label,
       style:"width:100%; border:none; background:transparent; font-family:'Fraunces',serif; font-size:13px; color:var(--forest); font-weight:600; padding:0;"});
     labelInput.addEventListener("change", ()=>{ col.label = labelInput.value; onSave(true); });
-    th.appendChild(labelInput);
+    cell.appendChild(labelInput);
     if(item.columns.length>1){
       const delColBtn = el("span",{class:"del", html:"✕", title:"Elimina colonna",
         style:"cursor:pointer;opacity:.5;font-size:11px; position:absolute; top:8px; right:14px;"});
@@ -5377,7 +5380,7 @@ function renderGenericTable(container, item, onSave){
           onSave();
         }
       });
-      th.appendChild(delColBtn);
+      cell.appendChild(delColBtn);
     }
     const handle = el("span",{class:"col-resize-handle"});
     handle.addEventListener("pointerdown",(e)=>{
@@ -5387,8 +5390,10 @@ function renderGenericTable(container, item, onSave){
       const startW = col.width || 160;
       function move(ev){
         const w = Math.max(50, startW + (ev.clientX - startX));
-        cols[col.id].style.width = w+"px";
+        cellEls[col.id].style.flex = `0 0 ${w}px`;
+        cellEls[col.id].style.width = w+"px";
         col.width = w;
+        table.style.minWidth = (item.columns.reduce((sum,c)=>sum+(c.width||160), 0) + DEL_COL_W) + "px";
       }
       function up(){
         handle.removeEventListener("pointermove", move);
@@ -5398,17 +5403,17 @@ function renderGenericTable(container, item, onSave){
       handle.addEventListener("pointermove", move);
       handle.addEventListener("pointerup", up);
     });
-    th.appendChild(handle);
-    headRow.appendChild(th);
+    cell.appendChild(handle);
+    headRow.appendChild(cell);
   });
-  headRow.appendChild(el("th",{},""));
+  headRow.appendChild(el("div",{class:"gen-cell-del"},""));
   table.appendChild(headRow);
 
   item.rows.forEach((row,ri)=>{
     const rowH = row.height;
-    const tr = el("tr",{style: rowH ? `height:${rowH}px;` : ""});
-    item.columns.forEach((col,ci)=>{
-      const td = el("td",{class: ci===0 ? "tires-sticky-col" : "", style: ci===0 ? "" : "position:relative;"});
+    const tr = el("div",{class:"gen-row", style: rowH ? `height:${rowH}px;` : ""});
+    item.columns.forEach(col=>{
+      const cell = el("div",{class:"gen-cell", style:`flex:0 0 ${col.width||160}px; width:${col.width||160}px;`});
       let inp;
       if(col.type==="date"){
         inp = el("input",{type:"date", value:row[col.id]||""});
@@ -5419,13 +5424,13 @@ function renderGenericTable(container, item, onSave){
         inp.addEventListener("input", ()=>autoResize(inp));
         inp.addEventListener("change", ()=>{ row[col.id]=inp.value; onSave(true); });
       }
-      td.appendChild(inp);
-      tr.appendChild(td);
+      cell.appendChild(inp);
+      tr.appendChild(cell);
     });
-    const lastTd = el("td",{style:"position:relative;"});
+    const lastCell = el("div",{class:"gen-cell-del"});
     const del = el("button",{class:"btn small danger"},"✕");
     del.addEventListener("click", ()=>{ item.rows.splice(ri,1); onSave(); });
-    lastTd.appendChild(del);
+    lastCell.appendChild(del);
     const rowHandle = el("span",{class:"row-resize-handle"});
     rowHandle.addEventListener("pointerdown",(e)=>{
       e.preventDefault();
@@ -5445,8 +5450,8 @@ function renderGenericTable(container, item, onSave){
       rowHandle.addEventListener("pointermove", move);
       rowHandle.addEventListener("pointerup", up);
     });
-    lastTd.appendChild(rowHandle);
-    tr.appendChild(lastTd);
+    lastCell.appendChild(rowHandle);
+    tr.appendChild(lastCell);
     table.appendChild(tr);
   });
   wrap.appendChild(table);

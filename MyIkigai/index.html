@@ -828,6 +828,7 @@ table.tires th{
   border-bottom:2px solid var(--line); padding:8px 14px 8px 10px; overflow:hidden;
 }
 table.tires td{padding:6px 10px; border-bottom:1px solid var(--line); vertical-align:top; overflow:hidden;}
+.tires-sticky-col{position:sticky; left:0; z-index:2; background:var(--card); border-right:1px solid var(--line);}
 table.tires input[type=text], table.tires input[type=date]{font-size:13px; padding:4px 6px; width:100%;}
 table.tires textarea.gomme-cell{
   font-size:13px; padding:4px 6px; width:100%; border:1px solid var(--line); border-radius:6px;
@@ -2538,23 +2539,37 @@ function migrateSubItemTypes(arr){
 // Tabella come le altre, non più un tipo a parte.
 function migrateGommeToTable(){
   let target = state.maintenanceItems.find(it=>it.id==="tires");
-  if(target && target.type==="table") return; // già migrata
   if(!target){
     target = {id:"tires", name:"Gomme", created:new Date().toLocaleDateString("it-IT")};
     state.maintenanceItems.unshift(target);
   }
-  target.type = "table";
-  target.columns = [
-    {id:"treno", label:"Treno", width:110},
-    {id:"intervento", label:"Intervento", width:220},
-    {id:"data", label:"Data", width:130, type:"date"},
-    {id:"km", label:"Km", width:80},
-    {id:"note", label:"Note", width:220}
-  ];
-  target.rows = (state.tires||[]).map(r=>({
-    id:r.id, treno:r.treno||"", intervento:r.intervento||"", data:r.data||"", km:r.km||"", note:r.note||""
-  }));
-  store.set("maintenanceItems", state.maintenanceItems);
+  if(target.type!=="table"){
+    target.type = "table";
+    target.columns = [
+      {id:"treno", label:"Treno", width:110},
+      {id:"intervento", label:"Intervento", width:220},
+      {id:"data", label:"Data", width:130, type:"date"},
+      {id:"km", label:"Km", width:80},
+      {id:"note", label:"Note", width:220}
+    ];
+    target.rows = (state.tires||[]).map(r=>({
+      id:r.id, treno:r.treno||"", intervento:r.intervento||"", data:r.data||"", km:r.km||"", note:r.note||""
+    }));
+    store.set("maintenanceItems", state.maintenanceItems);
+  }
+  // Sistemazione una tantum: "Intervento" come prima colonna al posto di "Treno", così sui
+  // telefoni la colonna che resta fissa durante lo scroll orizzontale è quella più identificativa
+  // (vedi tires-sticky-col in renderGenericTable), non un numero senza contesto.
+  if(target.columns){
+    const ti = target.columns.findIndex(c=>c.id==="treno");
+    const ii = target.columns.findIndex(c=>c.id==="intervento");
+    if(ti===0 && ii===1){
+      const tmp = target.columns[0];
+      target.columns[0] = target.columns[1];
+      target.columns[1] = tmp;
+      store.set("maintenanceItems", state.maintenanceItems);
+    }
+  }
 }
 
 async function loadAll(){
@@ -5346,7 +5361,7 @@ function renderGenericTable(container, item, onSave){
 
   const headRow = el("tr");
   item.columns.forEach((col,ci)=>{
-    const th = el("th",{style:"position:relative; padding-right:26px;"});
+    const th = el("th",{class: ci===0 ? "tires-sticky-col" : "", style: ci===0 ? "padding-right:26px;" : "position:relative; padding-right:26px;"});
     const labelInput = el("input",{type:"text", value:col.label,
       style:"width:100%; border:none; background:transparent; font-family:'Fraunces',serif; font-size:13px; color:var(--forest); font-weight:600; padding:0;"});
     labelInput.addEventListener("change", ()=>{ col.label = labelInput.value; onSave(true); });
@@ -5391,8 +5406,8 @@ function renderGenericTable(container, item, onSave){
   item.rows.forEach((row,ri)=>{
     const rowH = row.height;
     const tr = el("tr",{style: rowH ? `height:${rowH}px;` : ""});
-    item.columns.forEach(col=>{
-      const td = el("td",{style:"position:relative;"});
+    item.columns.forEach((col,ci)=>{
+      const td = el("td",{class: ci===0 ? "tires-sticky-col" : "", style: ci===0 ? "" : "position:relative;"});
       let inp;
       if(col.type==="date"){
         inp = el("input",{type:"date", value:row[col.id]||""});

@@ -348,7 +348,6 @@ main{
   overflow-x:hidden;
   overflow-y:auto;
   min-width:0;
-  touch-action:pan-y;
 }
 .dash-header-sticky{
   position:sticky; top:-13px; z-index:20; background:var(--paper-2);
@@ -823,7 +822,7 @@ input.pack-num{
 .pack-item.not-needed{opacity:.5;}
 
 /* ---- Tabella generica (Gomme, Manutenzione, sotto-schede "Tabella") — <div> flessibili ---- */
-.gen-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch; touch-action:pan-x;}
+.gen-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
 .gen-table{display:flex; flex-direction:column; font-size:13.5px;}
 .gen-row{display:flex;}
 .gen-row-head{
@@ -919,7 +918,7 @@ input.pack-num{
 .project-dash-list-date{margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); flex-shrink:0;}
 .project-dash-list-date.overdue{color:var(--urgent-text, var(--rust)); font-weight:700;}
 .project-dash-empty{font-size:12.5px; color:var(--ink-soft); font-style:italic;}
-.project-table-wrap{margin-top:20px; overflow-x:auto; -webkit-overflow-scrolling:touch; touch-action:pan-x;}
+.project-table-wrap{margin-top:20px; overflow-x:auto; -webkit-overflow-scrolling:touch;}
 .project-table{min-width:660px;}
 .project-table-title{font-family:'Fraunces',serif; font-weight:600; font-size:15px; margin-bottom:8px;}
 .project-table-header{
@@ -5357,10 +5356,10 @@ function renderGenericTable(container, item, onSave){
   container.appendChild(addColBtn);
 
   container.appendChild(scrollHintNote("Scorri per vedere tutte le colonne"));
-  const wrap = el("div",{class:"gen-table-wrap"});
+  const wrap = el("div",{class:"gen-table-wrap card"});
   const DEL_COL_W = 36;
   const totalW = item.columns.reduce((sum,col)=>sum+(col.width||160), 0) + DEL_COL_W;
-  const table = el("div",{class:"gen-table card", style:`min-width:${totalW}px;`});
+  const table = el("div",{class:"gen-table", style:`min-width:${totalW}px;`});
   const cellEls = {};
 
   const headRow = el("div",{class:"gen-row gen-row-head"});

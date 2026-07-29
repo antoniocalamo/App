@@ -5347,7 +5347,7 @@ function renderGenericTable(container, item, onSave){
   container.appendChild(addColBtn);
 
   container.appendChild(scrollHintNote("Scorri per vedere tutte le colonne"));
-  const wrap = el("div",{style:"overflow-x:auto;"});
+  const wrap = el("div",{class:"gomme-table-wrap", style:"overflow-x:auto;"});
   const table = el("table",{class:"tires card"});
   const colgroup = el("colgroup");
   const cols = {};

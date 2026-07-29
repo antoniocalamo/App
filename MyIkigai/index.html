@@ -919,23 +919,30 @@ input.pack-num{
 .project-dash-list-date.overdue{color:var(--urgent-text, var(--rust)); font-weight:700;}
 .project-dash-empty{font-size:12.5px; color:var(--ink-soft); font-style:italic;}
 .project-table-wrap{margin-top:20px; overflow-x:auto; -webkit-overflow-scrolling:touch;}
-.project-table{min-width:876px;}
+.project-table{min-width:806px;}
 .project-table-title{font-family:'Fraunces',serif; font-weight:600; font-size:15px; margin-bottom:8px;}
 .project-table-header{
-  display:grid; grid-template-columns: 96px minmax(160px,1fr) 92px 130px 130px 56px 130px 26px; gap:8px;
+  display:grid; grid-template-columns: 96px minmax(160px,1fr) 92px 95px 95px 56px 130px 26px; gap:8px;
   padding:0 6px 7px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px;
   color:var(--ink-soft); border-bottom:1px solid var(--line);
 }
 .project-table-row{
-  display:grid; grid-template-columns: 96px minmax(160px,1fr) 92px 130px 130px 56px 130px 26px; gap:8px; align-items:center;
+  display:grid; grid-template-columns: 96px minmax(160px,1fr) 92px 95px 95px 56px 130px 26px; gap:8px; align-items:center;
   padding:6px; border-bottom:1px solid var(--line); font-size:12.5px;
 }
 .project-table-row:hover{background:var(--paper-2);}
-.project-table-date{
-  border:none; background:transparent; font-family:'IBM Plex Mono',monospace; font-size:11px;
-  color:var(--ink); width:calc(100% - 8px); padding:2px 0; margin-right:8px;
+.project-table-date-compact{
+  position:relative; display:block; width:100%; box-sizing:border-box; cursor:pointer;
+  border:1px solid var(--line); border-radius:6px; padding:3px 6px;
+  font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink);
+  background:var(--card); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-.project-table-date:focus{outline:none; background:var(--card); border-radius:6px;}
+.project-table-date-compact:hover{border-color:var(--forest);}
+.project-table-date-display{pointer-events:none;}
+.project-table-date-hidden{
+  position:absolute; inset:0; width:100%; height:100%; margin:0; padding:0; border:none;
+  opacity:0; cursor:pointer;
+}
 .project-table-pct-wrap{display:flex; align-items:center; gap:2px;}
 .project-table-pct-input{
   width:32px; border:none; background:transparent; font-family:'IBM Plex Mono',monospace;
@@ -1911,6 +1918,23 @@ function fmtDateShort(iso){
   if(!iso) return "—";
   const d = new Date(iso);
   return String(d.getDate()).padStart(2,"0")+"/"+String(d.getMonth()+1).padStart(2,"0")+"/"+d.getFullYear();
+}
+// Sostituto compatto di <input type="date">: su iOS Safari il controllo nativo ha un bordo/sfondo
+// che il CSS non può rimuovere né ridimensionare, causando sovrapposizioni nelle tabelle strette.
+// Qui il vero <input type="date"> resta presente ma invisibile (apre comunque il selettore nativo
+// al tocco, tramite il comportamento standard <label>+<input>); il testo che si vede è un elemento
+// nostro, di cui controlliamo interamente bordo e larghezza.
+function buildCompactDateInput(initialValue, onChange){
+  const label = el("label", {class:"project-table-date-compact"});
+  const display = el("span", {class:"project-table-date-display"}, fmtDateShort(initialValue));
+  const inp = el("input", {type:"date", class:"project-table-date-hidden", value: initialValue||""});
+  inp.addEventListener("change", ()=>{
+    display.textContent = fmtDateShort(inp.value);
+    onChange(inp.value);
+  });
+  label.appendChild(display);
+  label.appendChild(inp);
+  return label;
 }
 const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4.5 4.5L19 7"/></svg>';
 const ICON_SUITCASE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>';
@@ -5921,23 +5945,21 @@ function renderProjectTable(detail, project, tasks){
       const assigneeSel = buildAssigneeInput(t, "gantt-pill-select assignee", ()=>{ ganttSave(project); });
       row.appendChild(assigneeSel);
 
-      const startInp = el("input",{type:"date", class:"project-table-date", value:t.start});
-      startInp.addEventListener("change", ()=>{
-        if(!startInp.value) return;
-        t.start = startInp.value;
+      const startCell = buildCompactDateInput(t.start, (val)=>{
+        if(!val) return;
+        t.start = val;
         if(t.end < t.start) t.end = t.start;
         ganttSave(project); render("progetti");
       });
-      row.appendChild(startInp);
+      row.appendChild(startCell);
 
-      const endInp = el("input",{type:"date", class:"project-table-date", value:t.end});
-      endInp.addEventListener("change", ()=>{
-        if(!endInp.value) return;
-        t.end = endInp.value;
+      const endCell = buildCompactDateInput(t.end, (val)=>{
+        if(!val) return;
+        t.end = val;
         if(t.start > t.end) t.start = t.end;
         ganttSave(project); render("progetti");
       });
-      row.appendChild(endInp);
+      row.appendChild(endCell);
 
       const pctWrap = el("div",{class:"project-table-pct-wrap"});
       const pctInp = el("input",{type:"number", min:"0", max:"100", class:"project-table-pct-input", value:String(t.progress||0)});

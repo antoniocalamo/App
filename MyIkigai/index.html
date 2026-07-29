@@ -768,6 +768,8 @@ textarea{resize:vertical;}
 .coll-item-grip:hover{opacity:.8;}
 .coll-item.active .coll-item-grip{color:#fff;}
 .coll-item-color-dot{width:9px; height:9px; border-radius:50%; flex-shrink:0; border:1px solid rgba(0,0,0,0.15); margin-top:5px;}
+.coll-item-lock{width:12px; height:12px; flex-shrink:0; opacity:.7; margin-top:3px;}
+.coll-item-lock svg{width:100%; height:100%;}
 .coll-item-name{
   flex:1; min-width:0;
   overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2;
@@ -1909,6 +1911,7 @@ const ICON_TIRE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const ICON_COIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 19V13M9 19V9M14 19V14M19 19V6"/></svg>';
 const ICON_EYE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
 const ICON_EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 3l18 18"/><path d="M10.6 5.2A10.8 10.8 0 0 1 12 5c6 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4M6.5 6.7C4 8.3 2 12 2 12s4 7 10 7c1.3 0 2.5-.3 3.6-.8"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+const ICON_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 const ICON_STAR_KPI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M12 3l2.6 5.9 6.4.6-4.8 4.3 1.4 6.3L12 17l-5.6 3.1 1.4-6.3-4.8-4.3 6.4-.6Z"/></svg>';
 const ICON_TARGET_KPI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>';
 const KPI_CATALOG = {
@@ -2679,6 +2682,9 @@ async function loadAll(){
   }
   state.sharedBoards = migrateSubItemTypes(await store.get("sharedBoards", DEFAULTS.sharedBoards));
   state.projects = await store.get("projects", DEFAULTS.projects);
+  state.projectsPrivate = await store.get(privKey("projects"), []);
+  state.projectsPrivate.forEach(p=>{ p.private = true; });
+  state.projects = state.projects.concat(state.projectsPrivate);
   state.projects.forEach(p=>((p.data&&p.data.tasks)||[]).forEach(t=>{
     migrateColorField(t, "color");
     if(t.status==null) t.status = t.progress>=100 ? "done" : (t.progress>0 ? "doing" : "todo");
@@ -3002,6 +3008,22 @@ function openSubItemEditModal(item, opts){
       colorPicker.appendChild(dot);
     });
     modal.appendChild(colorPicker);
+    if(opts.allowPrivate){
+      modal.appendChild(el("div",{class:"field-label", style:"margin-top:10px;"},"Visibilità"));
+      const visWrap = el("div",{class:"modal-radio-row"});
+      const sharedLabel = el("label",{});
+      const sharedRadio = el("input",{type:"radio", name:"itemvis"});
+      sharedRadio.checked = !opts.currentPrivate;
+      sharedLabel.appendChild(sharedRadio); sharedLabel.appendChild(document.createTextNode("Condiviso"));
+      const privateLabel = el("label",{});
+      const privateRadio = el("input",{type:"radio", name:"itemvis"});
+      privateRadio.checked = !!opts.currentPrivate;
+      privateLabel.appendChild(privateRadio); privateLabel.appendChild(document.createTextNode("Solo per me"));
+      visWrap.appendChild(sharedLabel); visWrap.appendChild(privateLabel);
+      modal.appendChild(visWrap);
+      sharedRadio.addEventListener("change", ()=>{ if(sharedRadio.checked) opts.onVisibilityChange(false); });
+      privateRadio.addEventListener("change", ()=>{ if(privateRadio.checked) opts.onVisibilityChange(true); });
+    }
     const actions = el("div",{class:"modal-actions"});
     const delBtn = el("button",{class:"btn danger small", style:"margin-right:auto;"}, opts.delBtnLabel || "Elimina sotto-scheda");
     delBtn.addEventListener("click", ()=>{
@@ -5126,6 +5148,7 @@ function renderCollection(main, opts){
   const delBtnLabel = opts.delBtnLabel || "Elimina sotto-scheda";
   const emptyStateText = opts.emptyStateText || "Seleziona o crea una sotto-scheda per iniziare.";
   const emptyStateIcon = opts.emptyStateIcon || ICON_SUITCASE;
+  const saveList = ()=>{ if(opts.customSave) opts.customSave(); else store.set(key, state[key]); };
   main.appendChild(el("div",{class:"section-head"},[
     opts.titleEl || el("h1",{},title),
     el("span",{class:"tag"},state[key].length+" "+nounPlural)
@@ -5137,11 +5160,21 @@ function renderCollection(main, opts){
   newBtn.addEventListener("click", ()=>{
     if(opts.fixedTemplate){
       // Alcune schede (es. Progetti) hanno un unico formato fisso: niente scelta di template.
+      if(opts.allowPrivate){
+        openNewProjectModal(namePrompt, (name, isPrivate)=>{
+          const item = { id:"c"+Date.now(), name, created:new Date().toLocaleDateString("it-IT"), data: template() };
+          if(isPrivate) item.private = true;
+          state[key].push(item);
+          saveList();
+          setActive(item.id); render(opts.tab);
+        });
+        return;
+      }
       const name = prompt(namePrompt);
       if(!name) return;
       const item = { id:"c"+Date.now(), name, created:new Date().toLocaleDateString("it-IT"), data: template() };
       state[key].push(item);
-      store.set(key, state[key]);
+      saveList();
       setActive(item.id); render(opts.tab);
       return;
     }
@@ -5150,7 +5183,7 @@ function renderCollection(main, opts){
       if(templateType==="table") Object.assign(item, newTableTemplateData());
       else item.data = template();
       state[key].push(item);
-      store.set(key, state[key]);
+      saveList();
       setActive(item.id); render(opts.tab);
     });
   });
@@ -5164,16 +5197,20 @@ function renderCollection(main, opts){
     nameRow.appendChild(grip);
     if(cHex) nameRow.appendChild(el("span",{class:"coll-item-color-dot", style:`background:${cHex};`}));
     nameRow.appendChild(el("span",{class:"coll-item-name"}, c.name));
+    if(c.private) nameRow.appendChild(el("span",{class:"coll-item-lock", html:ICON_LOCK, title:"Visibile solo a te"}));
     const renameBtn = el("span",{class:"coll-item-rename", html:ICON_EDIT, title:renameTitle});
     renameBtn.addEventListener("click",(e)=>{
       e.stopPropagation();
       openSubItemEditModal(c, {
         delBtnLabel: delBtnLabel,
-        onRename:(name)=>{ c.name=name; store.set(key, state[key]); render(opts.tab); },
-        onColorChange:(idx)=>{ c.color=(idx==null?undefined:idx); store.set(key, state[key]); render(opts.tab); },
+        allowPrivate: opts.allowPrivate,
+        currentPrivate: !!c.private,
+        onRename:(name)=>{ c.name=name; saveList(); render(opts.tab); },
+        onColorChange:(idx)=>{ c.color=(idx==null?undefined:idx); saveList(); render(opts.tab); },
+        onVisibilityChange:(isPrivate)=>{ c.private = isPrivate || undefined; saveList(); render(opts.tab); },
         onDelete:()=>{
           state[key] = state[key].filter(x=>x.id!==c.id);
-          store.set(key, state[key]); setActive(null); render(opts.tab);
+          saveList(); setActive(null); render(opts.tab);
         }
       });
     });
@@ -5181,7 +5218,7 @@ function renderCollection(main, opts){
     it.appendChild(nameRow);
     it.appendChild(el("div",{style:"font-weight:400;font-size:11px;opacity:.75;margin-top:2px;"}, c.created));
     it.addEventListener("click", ()=>{ setActive(c.id); render(opts.tab); });
-    attachRowDrag(grip, it, ci, state[key], ()=>{ store.set(key, state[key]); render(opts.tab); });
+    attachRowDrag(grip, it, ci, state[key], ()=>{ saveList(); render(opts.tab); });
     list.appendChild(it);
   });
   wrap.appendChild(list);
@@ -5233,6 +5270,42 @@ function openNewSubItemModal(namePromptLabel, onCreate){
         return;
       }
       onCreate(nameInput.value.trim(), selected);
+      close();
+    });
+    actions.appendChild(cancelBtn); actions.appendChild(createBtn);
+    modal.appendChild(actions);
+    nameInput.focus();
+  });
+}
+// Modale creazione progetto con scelta di visibilità (Condiviso / Solo per me), stessa logica
+// già usata per le schede custom (openNewTabModal), riusata qui per singoli progetti.
+function openNewProjectModal(namePromptLabel, onCreate){
+  openModal((modal, close)=>{
+    modal.appendChild(el("h3",{},"Nuovo progetto"));
+    modal.appendChild(el("div",{class:"field-label"},"Nome"));
+    const nameInput = el("input",{type:"text", placeholder:(namePromptLabel||"Nome del progetto").replace(/:$/,"")});
+    modal.appendChild(nameInput);
+    modal.appendChild(el("div",{class:"field-label", style:"margin-top:10px;"},"Visibilità"));
+    const visWrap = el("div",{class:"modal-radio-row"});
+    const sharedLabel = el("label",{});
+    const sharedRadio = el("input",{type:"radio", name:"projvis"}); sharedRadio.checked = true;
+    sharedLabel.appendChild(sharedRadio); sharedLabel.appendChild(document.createTextNode("Condiviso"));
+    const privateLabel = el("label",{});
+    const privateRadio = el("input",{type:"radio", name:"projvis"});
+    privateLabel.appendChild(privateRadio); privateLabel.appendChild(document.createTextNode("Solo per me"));
+    visWrap.appendChild(sharedLabel); visWrap.appendChild(privateLabel);
+    modal.appendChild(visWrap);
+    const actions = el("div",{class:"modal-actions"});
+    const cancelBtn = el("button",{class:"btn ghost"},"Annulla");
+    cancelBtn.addEventListener("click", close);
+    const createBtn = el("button",{class:"btn primary"},"Crea");
+    createBtn.addEventListener("click", ()=>{
+      if(!nameInput.value.trim()){
+        alert("Il nome del progetto è obbligatorio.");
+        nameInput.focus();
+        return;
+      }
+      onCreate(nameInput.value.trim(), privateRadio.checked);
       close();
     });
     actions.appendChild(cancelBtn); actions.appendChild(createBtn);
@@ -5519,8 +5592,17 @@ function ganttComputeRange(tasks){
   const totalDays = Math.max(14, Math.round((new Date(max+"T00:00:00") - rangeStart)/86400000) + 1);
   return { rangeStart, totalDays };
 }
-function ganttSave(project){ store.set("projects", state.projects); }
-function ganttSaveQuiet(project){ store.setQuiet("projects", state.projects); }
+// Salva i progetti su due chiavi separate: quelli condivisi in "projects" (visibile a tutti),
+// quelli marcati "private" nell'area privata dell'utente corrente (privKey), così un progetto
+// "Solo per me" non viene mai trasmesso all'altro utente, non solo nascosto a video.
+function saveProjects(quiet){
+  const shared = state.projects.filter(p=>!p.private);
+  const mine = state.projects.filter(p=>p.private);
+  if(quiet){ store.setQuiet("projects", shared); store.setQuiet(privKey("projects"), mine); }
+  else { store.set("projects", shared); store.set(privKey("projects"), mine); }
+}
+function ganttSave(project){ saveProjects(false); }
+function ganttSaveQuiet(project){ saveProjects(true); }
 let ganttViewMode = {};
 function ensureAssigneeDatalist(){
   let dl = document.getElementById("assignee-suggestions");
@@ -8363,7 +8445,7 @@ function render(tab){
   else if(tab==="progetti") renderCollection(main, {
     key:"projects", tab:"progetti", title:"Progetti", titleEl: builtinTabHeader("progetti","Progetti"), active:activeProject,
     setActive:(id)=>activeProject=id, template:PROJECT_TEMPLATE, renderDetail:renderProjectDetail,
-    itemsLabel:"progetti salvati", newBtnLabel:"+ Nuovo progetto", fixedTemplate:true,
+    itemsLabel:"progetti salvati", newBtnLabel:"+ Nuovo progetto", fixedTemplate:true, allowPrivate:true,
     namePrompt:"Nome del progetto:", renameTitle:"Rinomina progetto", renamePrompt:"Rinomina progetto:",
     delBtnLabel:"Elimina progetto", emptyStateText:"Seleziona o crea un progetto per iniziare.", emptyStateIcon:ICON_CHECK
   });

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Test scroll tabella — varianti</title>
+<style>
+  html, body{ height:100%; margin:0; overflow:hidden; font-family:sans-serif; }
+  .app{ display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+  main{
+    flex:1; overflow-y:auto; overflow-x:hidden; touch-action:pan-y;
+    padding:16px; min-width:0;
+  }
+  .collection{ display:flex; flex-direction:column; }
+  .coll-detail{ flex:1; min-width:0; }
+
+  h3{ margin:28px 0 4px 0; }
+  p.desc{ margin:0 0 8px 0; font-size:13px; color:#666; }
+
+  .wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; border:1px solid #ccc; border-radius:8px; }
+  .wrap.pan-x{ touch-action:pan-x; }
+  .wrap.contain{ overscroll-behavior-x:contain; }
+  .wrap.no-momentum{ -webkit-overflow-scrolling:auto; }
+
+  table.tires{ width:auto; min-width:640px; border-collapse:collapse; font-size:13.5px; table-layout:fixed; }
+  table.tires th, table.tires td{ padding:8px 10px; border-bottom:1px solid #ddd; text-align:left; }
+  table.tires th{ background:#f5f5f0; font-weight:600; }
+
+  .sticky-col{ position:sticky; left:0; z-index:2; background:#fff; border-right:1px solid #ccc; }
+  th.sticky-col{ background:#f5f5f0; }
+
+  .filler{ height:60px; }
+</style>
+</head>
+<body>
+<div class="app">
+<main>
+  <div class="collection"><div class="coll-detail">
+
+  <p>Per ogni variante qui sotto, prova a scorrere col dito verso sinistra dentro il riquadro (per vedere Data/Km/Note). Dimmi quali funzionano e quali no (es. "1 sì, 2 no, 3 sì, 4 no").</p>
+
+  <h3>1) Come nell'app ora (sticky + pan-x + pan-y su main)</h3>
+  <p class="desc">Colonna Treno fissa a sinistra</p>
+  <div class="wrap pan-x">
+    <table class="tires">
+      <colgroup><col style="width:110px;"><col style="width:220px;"><col style="width:130px;"><col style="width:80px;"><col style="width:220px;"></colgroup>
+      <tr><th class="sticky-col">Treno</th><th>Intervento</th><th>Data</th><th>Km</th><th>Note</th></tr>
+      <tr><td class="sticky-col">1</td><td>Montaggio</td><td>23/05/2026</td><td>12000</td><td>Nessuna nota</td></tr>
+      <tr><td class="sticky-col">1</td><td>Inversione e bilanciamento</td><td>-</td><td>-</td><td>-</td></tr>
+    </table>
+  </div>
+
+  <h3>2) Senza colonna fissa (nessun position:sticky)</h3>
+  <p class="desc">Stessa tabella, ma "Treno" scorre insieme alle altre, non resta fissa</p>
+  <div class="wrap pan-x">
+    <table class="tires">
+      <colgroup><col style="width:110px;"><col style="width:220px;"><col style="width:130px;"><col style="width:80px;"><col style="width:220px;"></colgroup>
+      <tr><th>Treno</th><th>Intervento</th><th>Data</th><th>Km</th><th>Note</th></tr>
+      <tr><td>1</td><td>Montaggio</td><td>23/05/2026</td><td>12000</td><td>Nessuna nota</td></tr>
+      <tr><td>1</td><td>Inversione e bilanciamento</td><td>-</td><td>-</td><td>-</td></tr>
+    </table>
+  </div>
+
+  <h3>3) Con sticky + overscroll-behavior-x:contain</h3>
+  <p class="desc">Colonna fissa, con un'opzione anti-rimbalzo aggiuntiva</p>
+  <div class="wrap pan-x contain">
+    <table class="tires">
+      <colgroup><col style="width:110px;"><col style="width:220px;"><col style="width:130px;"><col style="width:80px;"><col style="width:220px;"></colgroup>
+      <tr><th class="sticky-col">Treno</th><th>Intervento</th><th>Data</th><th>Km</th><th>Note</th></tr>
+      <tr><td class="sticky-col">1</td><td>Montaggio</td><td>23/05/2026</td><td>12000</td><td>Nessuna nota</td></tr>
+      <tr><td class="sticky-col">1</td><td>Inversione e bilanciamento</td><td>-</td><td>-</td><td>-</td></tr>
+    </table>
+  </div>
+
+  <h3>4) Con sticky, senza momentum scroll iOS (-webkit-overflow-scrolling)</h3>
+  <p class="desc">Colonna fissa, ma tolgo lo scroll "a inerzia" per vedere se cambia qualcosa</p>
+  <div class="wrap pan-x no-momentum">
+    <table class="tires">
+      <colgroup><col style="width:110px;"><col style="width:220px;"><col style="width:130px;"><col style="width:80px;"><col style="width:220px;"></colgroup>
+      <tr><th class="sticky-col">Treno</th><th>Intervento</th><th>Data</th><th>Km</th><th>Note</th></tr>
+      <tr><td class="sticky-col">1</td><td>Montaggio</td><td>23/05/2026</td><td>12000</td><td>Nessuna nota</td></tr>
+      <tr><td class="sticky-col">1</td><td>Inversione e bilanciamento</td><td>-</td><td>-</td><td>-</td></tr>
+    </table>
+  </div>
+
+  <div class="filler"></div>
+  <p style="font-size:12px;color:#999;">(spazio vuoto in fondo, per verificare che lo scroll verticale della pagina funzioni comunque)</p>
+  <div class="filler"></div>
+
+  </div></div>
+</main>
+</div>
+</body>
+</html>

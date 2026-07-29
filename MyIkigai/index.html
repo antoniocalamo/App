@@ -5429,7 +5429,8 @@ function renderGenericTable(container, item, onSave){
       tr.appendChild(cell);
     });
     const lastCell = el("div",{class:"gen-cell-del"});
-    const del = el("button",{class:"btn small danger"},"✕");
+    const del = el("span",{class:"del", html:"✕", title:"Elimina riga",
+      style:"cursor:pointer; opacity:.5; font-size:13px; line-height:1;"});
     del.addEventListener("click", ()=>{ item.rows.splice(ri,1); onSave(); });
     lastCell.appendChild(del);
     const rowHandle = el("span",{class:"row-resize-handle"});

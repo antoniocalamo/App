@@ -8446,6 +8446,7 @@ function render(tab){
     key:"projects", tab:"progetti", title:"Progetti", titleEl: builtinTabHeader("progetti","Progetti"), active:activeProject,
     setActive:(id)=>activeProject=id, template:PROJECT_TEMPLATE, renderDetail:renderProjectDetail,
     itemsLabel:"progetti salvati", newBtnLabel:"+ Nuovo progetto", fixedTemplate:true, allowPrivate:true,
+    customSave: ()=>saveProjects(false),
     namePrompt:"Nome del progetto:", renameTitle:"Rinomina progetto", renamePrompt:"Rinomina progetto:",
     delBtnLabel:"Elimina progetto", emptyStateText:"Seleziona o crea un progetto per iniziare.", emptyStateIcon:ICON_CHECK
   });

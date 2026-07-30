@@ -905,6 +905,7 @@ input.pack-num{
 .gantt-group-dot.doing{background:var(--status-doing);}
 .gantt-group-dot.done{background:var(--status-done);}
 .gantt-group-count{margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600;}
+.gantt-group-label{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .gantt-view-switch{display:flex; gap:6px;}
 .project-status-breakdown{display:flex; gap:12px; margin-top:4px; flex-wrap:wrap;}
 .project-status-breakdown-item{display:flex; align-items:center; gap:5px; font-size:12.5px; color:var(--ink);}
@@ -1678,6 +1679,7 @@ input.cashflow-item-occ-input{
   .gantt-row-status-select{display:none;}
   .gantt-row-line2{display:none;}
   .gantt-row-status-dot{display:inline-block;}
+  .gantt-row-more-btn-desktop{display:none;}
 }
 </style>
 </head>
@@ -6078,7 +6080,7 @@ function renderProjectTable(detail, project, tasks){
     const groupRow = el("div",{class:"gantt-group-row", style:"height:32px;"});
     groupRow.appendChild(el("span",{class:"gantt-group-chevron"+(collapsed?" collapsed":"")}, "▼"));
     groupRow.appendChild(el("span",{class:"gantt-group-dot "+status}));
-    groupRow.appendChild(el("span",{}, label));
+    groupRow.appendChild(el("span",{class:"gantt-group-label"}, label));
     groupRow.appendChild(el("span",{class:"gantt-group-count"}, String(groupTasks.length)));
     groupRow.addEventListener("click", ()=>{
       if(!project.data.collapsedGroups) project.data.collapsedGroups = {};
@@ -6282,7 +6284,7 @@ function renderProjectDetail(detail, project){
     const groupRow = el("div",{class:"gantt-group-row", style:`height:${GANTT_GROUP_H}px;`});
     groupRow.appendChild(el("span",{class:"gantt-group-chevron"+(collapsed?" collapsed":"")}, "▼"));
     groupRow.appendChild(el("span",{class:"gantt-group-dot "+status}));
-    groupRow.appendChild(el("span",{}, label));
+    groupRow.appendChild(el("span",{class:"gantt-group-label"}, label));
     groupRow.appendChild(el("span",{class:"gantt-group-count"}, String(groupTasks.length)));
     groupRow.addEventListener("click", ()=>{
       if(!project.data.collapsedGroups) project.data.collapsedGroups = {};
@@ -6322,10 +6324,14 @@ function renderProjectDetail(detail, project){
       });
       line1.appendChild(nameInp);
 
-      const moreBtn = el("button",{class:"gantt-row-more-btn", title:"Altri dettagli (note, ditta, budget, colore)"}, "⋯");
+      const moreBtn = el("button",{class:"gantt-row-more-btn gantt-row-more-btn-desktop", title:"Altri dettagli (note, ditta, budget, colore)"}, "⋯");
       moreBtn.addEventListener("click", ()=> openProjectTaskModal(project, t, ganttSave));
       line1.appendChild(moreBtn);
       labelRow.appendChild(line1);
+      labelRow.addEventListener("click", (e)=>{
+        if(e.target===nameInp || e.target.closest(".gantt-row-more-btn")) return;
+        openProjectTaskModal(project, t, ganttSave);
+      });
 
       const line2 = el("div",{class:"gantt-row-line2"});
       const assigneeSel = buildAssigneeInput(t, "gantt-pill-select assignee", ()=>{ ganttSave(project); });

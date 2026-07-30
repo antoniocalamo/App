@@ -2913,7 +2913,7 @@ async function startApp(){
   // dei task ha misurato "altezza zero" per tutto (è così che i browser trattano gli elementi
   // nascosti): il testo era presente ma schiacciato in un'area invisibile. Ora che l'app è
   // finalmente visibile, ricalcoliamo davvero l'altezza giusta.
-  document.querySelectorAll("textarea").forEach(ta=>autoResize(ta));
+  document.querySelectorAll("textarea:not(.gantt-timeline-name)").forEach(ta=>autoResize(ta));
   document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
   document.querySelector('.tab[data-tab="dashboard"]').classList.add("active");
   // Piccolo ritardo per dare tempo allo script accounts.google.com di caricarsi (è async/defer).
@@ -4153,7 +4153,7 @@ function renderDashboard(main){
     grid.classList.add("dash-grid-full");
   }
   main.appendChild(grid);
-  main.querySelectorAll("textarea").forEach(ta=>autoResize(ta));
+  main.querySelectorAll("textarea:not(.gantt-timeline-name)").forEach(ta=>autoResize(ta));
 }
 function buildDayRow(main, dateStr, isToday, isHistory){
   if(!state.dashboard.days[dateStr]) state.dashboard.days[dateStr] = [];
@@ -6319,7 +6319,7 @@ function renderProjectDetail(detail, project){
       line1.appendChild(statusSel);
       line1.appendChild(el("span",{class:"gantt-row-status-dot gantt-group-dot "+(t.status||"todo")}));
 
-      const nameInp = el("textarea",{rows:"2", class:"gantt-name-input"+(t.done?" done":"")});
+      const nameInp = el("textarea",{rows:"2", class:"gantt-name-input gantt-timeline-name"+(t.done?" done":"")});
       nameInp.value = t.name;
       nameInp.addEventListener("change", ()=>{
         t.name = nameInp.value.trim() || t.name;
@@ -8726,12 +8726,12 @@ function render(tab){
         template: SHARED_BOARD_TEMPLATE,
         renderDetail: renderGenericChecklistDetail(storeKey, tab)
       });
-      main2.querySelectorAll("textarea").forEach(ta=>autoResize(ta));
+      main2.querySelectorAll("textarea:not(.gantt-timeline-name)").forEach(ta=>autoResize(ta));
       const newCollList2 = main2.querySelector(".coll-list");
       if(newCollList2 && savedCollListScroll) newCollList2.scrollLeft = savedCollListScroll;
     });
   }
-  main.querySelectorAll("textarea").forEach(ta=>autoResize(ta));
+  main.querySelectorAll("textarea:not(.gantt-timeline-name)").forEach(ta=>autoResize(ta));
   const newActionsBar = main.querySelector(".todo-header-actions");
   if(newActionsBar && savedActionsScroll) newActionsBar.scrollLeft = savedActionsScroll;
   const newCollList = main.querySelector(".coll-list");

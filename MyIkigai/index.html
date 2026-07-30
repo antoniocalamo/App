@@ -906,6 +906,11 @@ input.pack-num{
 .gantt-view-switch{display:flex; gap:6px;}
 .project-status-breakdown{display:flex; gap:12px; margin-top:4px; flex-wrap:wrap;}
 .project-status-breakdown-item{display:flex; align-items:center; gap:5px; font-size:12.5px; color:var(--ink);}
+.project-status-bar{display:flex; height:8px; border-radius:4px; overflow:hidden; margin-bottom:8px;}
+.project-status-bar-seg.todo{background:var(--ink-soft); opacity:.45;}
+.project-status-bar-seg.doing{background:var(--teal);}
+.project-status-bar-seg.done{background:var(--leaf);}
+.project-status-legend{display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-soft);}
 .project-dash-lists{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px;}
 @media (max-width:700px){ .project-dash-lists{grid-template-columns:1fr;} }
 .project-dash-list-card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
@@ -5891,16 +5896,19 @@ function projectStatCard(key, ctx){
   }
   if(key==="status"){
     const c = el("div",{class:"stat-card wide-mobile"});
-    c.appendChild(el("div",{class:"stat-value"}, String(ctx.tasks.length)));
-    const breakdown = el("div",{class:"project-status-breakdown"});
-    [["todo","Da fare"],["doing","In corso"],["done","Fatto"]].forEach(([status,label])=>{
-      const item = el("div",{class:"project-status-breakdown-item"});
-      item.appendChild(el("span",{class:"gantt-group-dot "+status}));
-      item.appendChild(el("span",{}, label+" "+ctx.statusCounts[status]));
-      breakdown.appendChild(item);
+    const bar = el("div",{class:"project-status-bar"});
+    [["todo"],["doing"],["done"]].forEach(([status])=>{
+      const n = ctx.statusCounts[status];
+      if(!n) return;
+      bar.appendChild(el("div",{class:"project-status-bar-seg "+status, style:"flex:"+n+" "+n+" 0%;"}));
     });
-    c.appendChild(breakdown);
-    c.appendChild(el("div",{class:"stat-label"}, "Attività per stato"));
+    c.appendChild(bar);
+    const legend = el("div",{class:"project-status-legend"});
+    [["todo","Da fare"],["doing","In corso"],["done","Fatto"]].forEach(([status,label])=>{
+      legend.appendChild(el("span",{}, label+" "+ctx.statusCounts[status]));
+    });
+    c.appendChild(legend);
+    c.appendChild(el("div",{class:"stat-label"}, "Attività per stato · "+ctx.tasks.length+(ctx.tasks.length===1?" attività":" attività")));
     return c;
   }
   if(key==="overdue"){

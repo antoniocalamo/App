@@ -878,7 +878,7 @@ input.pack-num{
 .gantt-name-input{
   border:none; background:transparent; font-size:12.5px; padding:2px 4px; flex:1; min-width:0;
   color:var(--ink); font-family:'Inter',sans-serif; overflow:hidden; text-overflow:ellipsis;
-  white-space:normal; word-break:break-word; resize:none; height:34px; line-height:1.3;
+  white-space:nowrap; resize:none; height:auto; line-height:1.3;
 }
 .gantt-name-input:focus{outline:none; background:var(--card); border-radius:6px;}
 .gantt-name-input.done{text-decoration:line-through; color:var(--ink-soft);}
@@ -1682,6 +1682,7 @@ input.cashflow-item-occ-input{
   .gantt-row-line2{display:none;}
   .gantt-row-status-dot{display:inline-block;}
   .gantt-row-more-btn-desktop{display:none;}
+  .gantt-timeline-name{white-space:normal; word-break:break-word; text-overflow:clip; height:34px;}
 }
 </style>
 </head>

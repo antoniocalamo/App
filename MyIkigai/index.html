@@ -900,6 +900,7 @@ input.pack-num{
 .gantt-group-chevron{width:10px; flex-shrink:0; font-size:9px; transition:transform .15s ease; display:inline-block;}
 .gantt-group-chevron.collapsed{transform:rotate(-90deg);}
 .gantt-group-dot{width:7px; height:7px; border-radius:50%; flex-shrink:0;}
+.gantt-row-status-dot{display:none;}
 .gantt-group-dot.todo{background:var(--ink-soft); opacity:.45;}
 .gantt-group-dot.doing{background:var(--status-doing);}
 .gantt-group-dot.done{background:var(--status-done);}
@@ -908,10 +909,13 @@ input.pack-num{
 .project-status-breakdown{display:flex; gap:12px; margin-top:4px; flex-wrap:wrap;}
 .project-status-breakdown-item{display:flex; align-items:center; gap:5px; font-size:12.5px; color:var(--ink);}
 .project-status-bar{display:flex; height:8px; border-radius:4px; overflow:hidden; margin-bottom:8px;}
+.kpi-draggable .project-status-bar{margin-right:20px;}
 .project-status-bar-seg.todo{background:var(--status-todo);}
 .project-status-bar-seg.doing{background:var(--status-doing);}
 .project-status-bar-seg.done{background:var(--status-done);}
 .project-status-legend{display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-soft);}
+.project-stats-row{grid-auto-flow:dense;}
+.project-stats-row .stat-card.wide-always{grid-column:1/-1;}
 .project-dash-list-card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
 .project-dash-list-title{font-family:'Fraunces',serif; font-weight:600; font-size:14px; margin-bottom:8px;}
 .project-dash-list-item{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13px; cursor:pointer;}
@@ -1655,7 +1659,6 @@ input.cashflow-item-occ-input{
   .coll-detail{width:100%;}
   .stats-row{grid-template-columns:repeat(2,1fr);}
   .stats-row.dashboard-stats-row{grid-template-columns:1fr;}
-  .project-stats-row{grid-auto-flow:dense;}
   .project-stats-row .stat-card.wide-mobile{grid-column:span 2;}
   .section-label{flex-wrap:wrap; row-gap:6px;}
   .section-label-text{flex:1 1 100%;}
@@ -1671,7 +1674,10 @@ input.cashflow-item-occ-input{
   .orto-detail-panel{width:100%;}
   .modal-card{padding:20px 18px; max-width:calc(100vw - 32px);}
   .login-screen{padding:16px;}
-  .gantt-labels-col{width:182px;}
+  .gantt-labels-col{width:114px;}
+  .gantt-row-status-select{display:none;}
+  .gantt-row-line2{display:none;}
+  .gantt-row-status-dot{display:inline-block;}
 }
 </style>
 </head>
@@ -1977,9 +1983,10 @@ const PROJECT_STAT_LABELS = {
   progress: "Avanzamento medio",
   status: "Attività per stato",
   overdue: "Attività in ritardo",
-  budget: "Speso su budget"
+  budget: "Speso su budget",
+  upcoming: "Prossime scadenze"
 };
-const DEFAULT_PROJECT_STATS_ORDER = ["progress","status","overdue","budget"];
+const DEFAULT_PROJECT_STATS_ORDER = ["progress","status","overdue","budget","upcoming"];
 const APP_VERSION = "v0.115";
 const ADMIN_EMAIL = "antonio.calamo@gmail.com";
 // Unico punto in cui si decide chi è admin: da qui in poi ogni "potere speciale" riservato
@@ -5928,6 +5935,23 @@ function projectStatCard(key, ctx){
     c.appendChild(el("div",{class:"stat-label"}, "Speso su budget totale"));
     return c;
   }
+  if(key==="upcoming"){
+    const c = el("div",{class:"stat-card wide-always"});
+    c.appendChild(el("div",{class:"project-dash-list-title"}, "🗓 Prossime scadenze"));
+    if(!ctx.upcoming.length){
+      c.appendChild(el("div",{class:"project-dash-empty"}, "Nessuna scadenza imminente."));
+    } else {
+      ctx.upcoming.forEach(t=>{
+        const row = el("div",{class:"project-dash-list-item"});
+        row.appendChild(el("span",{class:"gantt-group-dot "+(t.status||"todo")}));
+        row.appendChild(el("span",{class:"project-dash-list-name"}, t.name));
+        row.appendChild(el("span",{class:"project-dash-list-date"}, fmtDateShort(t.end)));
+        row.addEventListener("click", ()=> openProjectTaskModal(ctx.project, t, ganttSave));
+        c.appendChild(row);
+      });
+    }
+    return c;
+  }
   return null;
 }
 // drag basato su Pointer Events, stesso meccanismo già usato per le card KPI della Home
@@ -6006,7 +6030,7 @@ function renderProjectDashboard(detail, project, tasks, totalPct, totBudget, tot
   const upcoming = tasks.filter(t=> t.status!=="done" && t.end && t.end >= todayIso)
     .sort((a,b)=> a.end < b.end ? -1 : 1).slice(0,3);
 
-  const statsCtx = { tasks, totalPct, statusCounts, overdue, hasMoneyData, totCost, totBudget };
+  const statsCtx = { tasks, totalPct, statusCounts, overdue, upcoming, hasMoneyData, totCost, totBudget, project };
 
   const statsActions = el("div",{class:"todo-header-actions", style:"margin-bottom:8px;"});
   const statsEditBtn = el("button",{class:"btn ghost small"},"Modifica card");
@@ -6030,22 +6054,6 @@ function renderProjectDashboard(detail, project, tasks, totalPct, totBudget, tot
   });
   detail.appendChild(statsRow);
 
-  const upcomingCard = el("div",{class:"project-dash-list-card", style:"margin-top:16px;"});
-  upcomingCard.appendChild(el("div",{class:"project-dash-list-title"}, "🗓 Prossime scadenze"));
-  if(!upcoming.length){
-    upcomingCard.appendChild(el("div",{class:"project-dash-empty"}, "Nessuna scadenza imminente."));
-  } else {
-    upcoming.forEach(t=>{
-      const row = el("div",{class:"project-dash-list-item"});
-      row.appendChild(el("span",{class:"gantt-group-dot "+(t.status||"todo")}));
-      row.appendChild(el("span",{class:"project-dash-list-name"}, t.name));
-      row.appendChild(el("span",{class:"project-dash-list-date"}, fmtDateShort(t.end)));
-      row.addEventListener("click", ()=> openProjectTaskModal(project, t, ganttSave));
-      upcomingCard.appendChild(row);
-    });
-  }
-
-  detail.appendChild(upcomingCard);
   renderProjectTable(detail, project, tasks);
 }
 function renderProjectTable(detail, project, tasks){
@@ -6291,7 +6299,7 @@ function renderProjectDetail(detail, project){
       const labelRow = el("div",{class:"gantt-label-row", style:`height:${GANTT_ROW_H}px;`});
 
       const line1 = el("div",{class:"gantt-row-line1"});
-      const statusSel = el("select",{class:"gantt-pill-select"});
+      const statusSel = el("select",{class:"gantt-pill-select gantt-row-status-select"});
       [["todo","Da fare"],["doing","In corso"],["done","Fatto"]].forEach(([v,l])=>
         statusSel.appendChild(el("option",{value:v}, l)));
       statusSel.value = t.status||"todo";
@@ -6305,6 +6313,7 @@ function renderProjectDetail(detail, project){
         ganttSave(project); render("progetti");
       });
       line1.appendChild(statusSel);
+      line1.appendChild(el("span",{class:"gantt-row-status-dot gantt-group-dot "+(t.status||"todo")}));
 
       const nameInp = el("input",{type:"text", class:"gantt-name-input"+(t.done?" done":""), value:t.name});
       nameInp.addEventListener("change", ()=>{

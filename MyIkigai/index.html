@@ -31,6 +31,7 @@
   --fin-nonliquid-bg:#DCEBDD; --fin-nonliquid-border:#A8CBA9; --fin-nonliquid-head:#1F4A28;
   --fin-debts-bg:#FBEAE7; --fin-debts-border:#EFC2BA; --fin-debts-head:#9C3B2E;
   --flow-income:#2F6B2F; --flow-expense:#9C3B2E; --flow-savings:#2D6187;
+  --status-todo:#9AA0A6; --status-doing:#D98A2B; --status-done:#2E7D4F;
 }
 :root[data-app-theme="milano"]{
   --paper:#F7F7F7;
@@ -900,19 +901,17 @@ input.pack-num{
 .gantt-group-chevron.collapsed{transform:rotate(-90deg);}
 .gantt-group-dot{width:7px; height:7px; border-radius:50%; flex-shrink:0;}
 .gantt-group-dot.todo{background:var(--ink-soft); opacity:.45;}
-.gantt-group-dot.doing{background:var(--teal);}
-.gantt-group-dot.done{background:var(--leaf);}
+.gantt-group-dot.doing{background:var(--status-doing);}
+.gantt-group-dot.done{background:var(--status-done);}
 .gantt-group-count{margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600;}
 .gantt-view-switch{display:flex; gap:6px;}
 .project-status-breakdown{display:flex; gap:12px; margin-top:4px; flex-wrap:wrap;}
 .project-status-breakdown-item{display:flex; align-items:center; gap:5px; font-size:12.5px; color:var(--ink);}
 .project-status-bar{display:flex; height:8px; border-radius:4px; overflow:hidden; margin-bottom:8px;}
-.project-status-bar-seg.todo{background:var(--ink-soft); opacity:.45;}
-.project-status-bar-seg.doing{background:var(--teal);}
-.project-status-bar-seg.done{background:var(--leaf);}
+.project-status-bar-seg.todo{background:var(--status-todo);}
+.project-status-bar-seg.doing{background:var(--status-doing);}
+.project-status-bar-seg.done{background:var(--status-done);}
 .project-status-legend{display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-soft);}
-.project-dash-lists{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:16px;}
-@media (max-width:700px){ .project-dash-lists{grid-template-columns:1fr;} }
 .project-dash-list-card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
 .project-dash-list-title{font-family:'Fraunces',serif; font-weight:600; font-size:14px; margin-bottom:8px;}
 .project-dash-list-item{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13px; cursor:pointer;}
@@ -920,7 +919,6 @@ input.pack-num{
 .project-dash-list-item:hover{color:var(--forest);}
 .project-dash-list-name{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .project-dash-list-date{margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); flex-shrink:0;}
-.project-dash-list-date.overdue{color:var(--urgent-text, var(--rust)); font-weight:700;}
 .project-dash-empty{font-size:12.5px; color:var(--ink-soft); font-style:italic;}
 .project-table-wrap{margin-top:20px; overflow-x:auto; -webkit-overflow-scrolling:touch;}
 .project-table{min-width:806px;}
@@ -935,6 +933,10 @@ input.pack-num{
   padding:6px; border-bottom:1px solid var(--line); font-size:12.5px;
 }
 .project-table-row:hover{background:var(--paper-2);}
+.project-table-name-input{
+  overflow:hidden; text-overflow:clip; white-space:pre-wrap; word-break:break-word;
+  resize:none; width:100%; box-sizing:border-box; line-height:1.35; padding:4px;
+}
 .project-table-date-compact{
   position:relative; display:block; width:100%; box-sizing:border-box; cursor:pointer;
   border:1px solid var(--line); border-radius:6px; padding:3px 6px;
@@ -5693,7 +5695,7 @@ const GANTT_PX_PER_DAY = 28;
 const GANTT_ROW_H = 54;
 const GANTT_GROUP_H = 32;
 function ganttStatusPillStyle(sel){
-  const map = { todo:{bg:"var(--paper-2)", fg:"var(--ink-soft)"}, doing:{bg:"var(--teal)", fg:"#fff"}, done:{bg:"var(--leaf)", fg:"#fff"} };
+  const map = { todo:{bg:"var(--paper-2)", fg:"var(--ink-soft)"}, doing:{bg:"var(--status-doing)", fg:"#fff"}, done:{bg:"var(--status-done)", fg:"#fff"} };
   const c = map[sel.value]||map.todo;
   sel.style.background = c.bg; sel.style.color = c.fg;
 }
@@ -6002,7 +6004,7 @@ function renderProjectDashboard(detail, project, tasks, totalPct, totBudget, tot
   const overdue = tasks.filter(t=> t.status!=="done" && t.end && t.end < todayIso)
     .sort((a,b)=> a.end < b.end ? -1 : 1);
   const upcoming = tasks.filter(t=> t.status!=="done" && t.end && t.end >= todayIso)
-    .sort((a,b)=> a.end < b.end ? -1 : 1).slice(0,5);
+    .sort((a,b)=> a.end < b.end ? -1 : 1).slice(0,3);
 
   const statsCtx = { tasks, totalPct, statusCounts, overdue, hasMoneyData, totCost, totBudget };
 
@@ -6028,25 +6030,7 @@ function renderProjectDashboard(detail, project, tasks, totalPct, totBudget, tot
   });
   detail.appendChild(statsRow);
 
-  const lists = el("div",{class:"project-dash-lists"});
-
-  const overdueCard = el("div",{class:"project-dash-list-card"});
-  overdueCard.appendChild(el("div",{class:"project-dash-list-title"}, "⚠ In ritardo"));
-  if(!overdue.length){
-    overdueCard.appendChild(el("div",{class:"project-dash-empty"}, "Nessuna attività in ritardo 🎉"));
-  } else {
-    overdue.forEach(t=>{
-      const row = el("div",{class:"project-dash-list-item"});
-      row.appendChild(el("span",{class:"gantt-group-dot "+(t.status||"todo")}));
-      row.appendChild(el("span",{class:"project-dash-list-name"}, t.name));
-      row.appendChild(el("span",{class:"project-dash-list-date overdue"}, fmtDateShort(t.end)));
-      row.addEventListener("click", ()=> openProjectTaskModal(project, t, ganttSave));
-      overdueCard.appendChild(row);
-    });
-  }
-  lists.appendChild(overdueCard);
-
-  const upcomingCard = el("div",{class:"project-dash-list-card"});
+  const upcomingCard = el("div",{class:"project-dash-list-card", style:"margin-top:16px;"});
   upcomingCard.appendChild(el("div",{class:"project-dash-list-title"}, "🗓 Prossime scadenze"));
   if(!upcoming.length){
     upcomingCard.appendChild(el("div",{class:"project-dash-empty"}, "Nessuna scadenza imminente."));
@@ -6060,9 +6044,8 @@ function renderProjectDashboard(detail, project, tasks, totalPct, totBudget, tot
       upcomingCard.appendChild(row);
     });
   }
-  lists.appendChild(upcomingCard);
 
-  detail.appendChild(lists);
+  detail.appendChild(upcomingCard);
   renderProjectTable(detail, project, tasks);
 }
 function renderProjectTable(detail, project, tasks){
@@ -6115,12 +6098,15 @@ function renderProjectTable(detail, project, tasks){
       });
       row.appendChild(statusSel);
 
-      const nameInp = el("input",{type:"text", class:"gantt-name-input"+(t.done?" done":""), value:t.name});
+      const nameInp = el("textarea",{rows:"1", class:"gantt-name-input project-table-name-input"+(t.done?" done":"")});
+      nameInp.value = t.name;
+      nameInp.addEventListener("input", ()=>autoResize(nameInp));
       nameInp.addEventListener("change", ()=>{
         t.name = nameInp.value.trim() || t.name;
         ganttSave(project); render("progetti");
       });
       row.appendChild(nameInp);
+      autoResize(nameInp);
 
       const assigneeSel = buildAssigneeInput(t, "gantt-pill-select assignee", ()=>{ ganttSave(project); });
       row.appendChild(assigneeSel);

@@ -8553,6 +8553,11 @@ function render(tab){
   // di ridisegnare e la riapplichiamo al nuovo elemento subito dopo.
   const prevActionsBar = document.querySelector(".todo-header-actions");
   const savedActionsScroll = prevActionsBar ? prevActionsBar.scrollLeft : 0;
+  // Stessa idea per la lista di sotto-schede a scorrimento orizzontale (es. Gomme, i progetti
+  // salvati): senza questo, cliccare una sotto-scheda la ricostruisce da zero e lo scroll
+  // riparte sempre dall'inizio.
+  const prevCollList = document.querySelector(".coll-list");
+  const savedCollListScroll = prevCollList ? prevCollList.scrollLeft : 0;
   const main = clear(document.getElementById("main"));
   if(tab==="dashboard") renderDashboard(main);
   else if(tab==="orto") renderOrto(main);
@@ -8597,11 +8602,15 @@ function render(tab){
         renderDetail: renderGenericChecklistDetail(storeKey, tab)
       });
       main2.querySelectorAll("textarea").forEach(ta=>autoResize(ta));
+      const newCollList2 = main2.querySelector(".coll-list");
+      if(newCollList2 && savedCollListScroll) newCollList2.scrollLeft = savedCollListScroll;
     });
   }
   main.querySelectorAll("textarea").forEach(ta=>autoResize(ta));
   const newActionsBar = main.querySelector(".todo-header-actions");
   if(newActionsBar && savedActionsScroll) newActionsBar.scrollLeft = savedActionsScroll;
+  const newCollList = main.querySelector(".coll-list");
+  if(newCollList && savedCollListScroll) newCollList.scrollLeft = savedCollListScroll;
 }
 
 setupMobileViewportPin();

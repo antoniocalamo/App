@@ -6551,6 +6551,80 @@ function computeAmortValue(am){
   }
   return am.rows[am.idx].capResiduo;
 }
+function exportAmortizationCSV(item, am){
+  const lines = am.rows.map(r=>
+    [r.date, String(r.capQuota), String(r.intQuota), String(r.totRata), r.capResiduo==null?"":String(r.capResiduo)].join(";")
+  );
+  const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = el("a",{href:url, download:"piano-ammortamento-"+(item.name||"mutuo").replace(/[^a-z0-9]+/gi,"-")+".csv"});
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function openAmortEditModal(item, onSave){
+  openModal((modal, close)=>{
+    modal.appendChild(el("h3",{},"Modifica piano di ammortamento"));
+    modal.appendChild(el("div",{style:"font-size:12px;color:var(--ink-soft);margin-bottom:10px;"},
+      "Correggi scadenza (gg/mm/aaaa) o importi riga per riga, o elimina una riga con ✕."));
+    const wrap = el("div",{style:"max-height:50vh; overflow:auto; border:1px solid var(--line); border-radius:8px;"});
+    const table = el("table",{style:"width:100%; border-collapse:collapse; font-size:12px;"});
+    const headRow = el("tr",{});
+    ["#","Scadenza","Capitale","Interessi","Tot. rata","Residuo",""].forEach(h=>
+      headRow.appendChild(el("th",{style:"position:sticky; top:0; background:var(--card); padding:6px 8px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap;"}, h)));
+    table.appendChild(el("thead",{},[headRow]));
+    const tbody = el("tbody",{});
+    const rowState = item.amortization.rows.map(r=>({
+      dateInp: el("input",{type:"text", value:r.date, style:"width:85px; font-family:'IBM Plex Mono',monospace;"}),
+      capInp: el("input",{type:"text", value:String(r.capQuota), style:"width:65px;"}),
+      intInp: el("input",{type:"text", value:String(r.intQuota), style:"width:65px;"}),
+      totInp: el("input",{type:"text", value:String(r.totRata), style:"width:65px;"}),
+      resInp: el("input",{type:"text", value:r.capResiduo==null?"":String(r.capResiduo), style:"width:75px;"}),
+      removed:false
+    }));
+    rowState.forEach((st,i)=>{
+      const tr = el("tr",{});
+      tr.appendChild(el("td",{style:"padding:4px 8px;color:var(--ink-soft);"}, String(i+1)));
+      [st.dateInp, st.capInp, st.intInp, st.totInp, st.resInp].forEach(inp=>{
+        const td = el("td",{style:"padding:2px 4px;"});
+        td.appendChild(inp); tr.appendChild(td);
+      });
+      const delTd = el("td",{});
+      const delBtn = el("span",{class:"del", html:"✕", style:"cursor:pointer;color:var(--ink-soft);"});
+      delBtn.addEventListener("click", ()=>{ st.removed = true; tr.style.opacity="0.35"; tr.style.textDecoration="line-through"; });
+      delTd.appendChild(delBtn); tr.appendChild(delTd);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody); wrap.appendChild(table); modal.appendChild(wrap);
+    const errBox = el("div",{style:"color:var(--rust); font-size:12px; margin-top:8px; min-height:16px;"});
+    modal.appendChild(errBox);
+    const actions = el("div",{class:"modal-actions"});
+    const cancelBtn = el("button",{class:"btn ghost"},"Annulla");
+    cancelBtn.addEventListener("click", close);
+    const saveBtn = el("button",{class:"btn primary"},"Salva modifiche");
+    saveBtn.addEventListener("click", ()=>{
+      const newRows = [];
+      for(const st of rowState){
+        if(st.removed) continue;
+        const dateStr = st.dateInp.value.trim();
+        if(!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)){ errBox.textContent = "Data non valida: "+dateStr; return; }
+        newRows.push({
+          date: dateStr,
+          capQuota: parseItalianNumber(st.capInp.value),
+          intQuota: parseItalianNumber(st.intInp.value),
+          totRata: parseItalianNumber(st.totInp.value),
+          capResiduo: st.resInp.value.trim()==="" ? undefined : parseItalianNumber(st.resInp.value)
+        });
+      }
+      if(!newRows.length){ errBox.textContent = "Il piano non può restare vuoto."; return; }
+      item.amortization.rows = newRows;
+      if(item.amortization.idx >= newRows.length) item.amortization.idx = newRows.length-1;
+      item.value = String(computeAmortValue(item.amortization));
+      onSave(); close(); render("finanze");
+    });
+    actions.appendChild(cancelBtn); actions.appendChild(saveBtn);
+    modal.appendChild(actions);
+  });
+}
 function openAmortizationModal(item, onSave){
   openModal((modal, close)=>{
     modal.appendChild(el("h3",{},"Piano di ammortamento"));
@@ -6641,6 +6715,17 @@ function openAmortizationModal(item, onSave){
           });
         }
         if(!rows.length){ errBox.textContent = "Nessuna riga valida trovata."; return; }
+        const firstD = parseItDate(rows[0].date), lastD = parseItDate(rows[rows.length-1].date);
+        if(firstD && lastD){
+          const opts = {day:"numeric", month:"long", year:"numeric"};
+          const ok = confirm(
+            "Controlla che le date siano nel verso giusto (giorno/mese, non mese/giorno):\n\n"+
+            "Prima rata: "+firstD.toLocaleDateString("it-IT",opts)+"\n"+
+            "Ultima rata: "+lastD.toLocaleDateString("it-IT",opts)+"\n\n"+
+            "Sono corrette?"
+          );
+          if(!ok) return;
+        }
         item.amortization = { rows, idx: 0, type: typeSelect.value };
         item.value = String(computeAmortValue(item.amortization));
         onSave(); close(); render("finanze");
@@ -6687,6 +6772,12 @@ function openAmortizationModal(item, onSave){
         }
       });
       actions.appendChild(removeBtn);
+      const exportBtn = el("button",{class:"btn ghost small"},"Esporta CSV");
+      exportBtn.addEventListener("click", ()=> exportAmortizationCSV(item, am));
+      actions.appendChild(exportBtn);
+      const editBtn = el("button",{class:"btn ghost small"},"Modifica righe");
+      editBtn.addEventListener("click", ()=>{ close(); openAmortEditModal(item, onSave); });
+      actions.appendChild(editBtn);
       const closeBtn = el("button",{class:"btn ghost"},"Chiudi");
       closeBtn.addEventListener("click", close);
       actions.appendChild(closeBtn);

@@ -1648,6 +1648,8 @@ input.cashflow-item-occ-input{
   .coll-detail{width:100%;}
   .stats-row{grid-template-columns:repeat(2,1fr);}
   .stats-row.dashboard-stats-row{grid-template-columns:1fr;}
+  .project-stats-row{grid-auto-flow:dense;}
+  .project-stats-row .stat-card.wide-mobile{grid-column:span 2;}
   .section-label{flex-wrap:wrap; row-gap:6px;}
   .section-label-text{flex:1 1 100%;}
   .todo-header-actions{
@@ -1964,6 +1966,13 @@ const KPI_CATALOG = {
     } }
 };
 const DEFAULT_KPI_SELECTION = ["monthlyPriorities","ortoWater","ortoFertilize","netWorth"];
+const PROJECT_STAT_LABELS = {
+  progress: "Avanzamento medio",
+  status: "Attività per stato",
+  overdue: "Attività in ritardo",
+  budget: "Speso su budget"
+};
+const DEFAULT_PROJECT_STATS_ORDER = ["progress","status","overdue","budget"];
 const APP_VERSION = "v0.115";
 const ADMIN_EMAIL = "antonio.calamo@gmail.com";
 // Unico punto in cui si decide chi è admin: da qui in poi ogni "potere speciale" riservato
@@ -2682,6 +2691,15 @@ async function loadAll(){
   }
   if(!state.dashboard.monthlyPriorities){
     state.dashboard.monthlyPriorities = { hidden:false, items:[] };
+  }
+  if(!state.dashboard.projectStatsOrder){
+    state.dashboard.projectStatsOrder = DEFAULT_PROJECT_STATS_ORDER.slice();
+  }
+  DEFAULT_PROJECT_STATS_ORDER.forEach(key=>{
+    if(!state.dashboard.projectStatsOrder.includes(key)) state.dashboard.projectStatsOrder.push(key);
+  });
+  if(!state.dashboard.projectStatsHidden){
+    state.dashboard.projectStatsHidden = [];
   }
   if(!state.dashboard.days){
     state.dashboard.days = {};
@@ -5864,6 +5882,111 @@ function openProjectTaskModal(project, task, save){
     nameInp.focus();
   });
 }
+function projectStatCard(key, ctx){
+  if(key==="progress"){
+    const c = el("div",{class:"stat-card"});
+    c.appendChild(el("div",{class:"stat-value"}, ctx.totalPct+"%"));
+    c.appendChild(el("div",{class:"stat-label"}, "Avanzamento medio · "+ctx.tasks.length+(ctx.tasks.length===1?" attività":" attività")));
+    return c;
+  }
+  if(key==="status"){
+    const c = el("div",{class:"stat-card wide-mobile"});
+    c.appendChild(el("div",{class:"stat-value"}, String(ctx.tasks.length)));
+    const breakdown = el("div",{class:"project-status-breakdown"});
+    [["todo","Da fare"],["doing","In corso"],["done","Fatto"]].forEach(([status,label])=>{
+      const item = el("div",{class:"project-status-breakdown-item"});
+      item.appendChild(el("span",{class:"gantt-group-dot "+status}));
+      item.appendChild(el("span",{}, label+" "+ctx.statusCounts[status]));
+      breakdown.appendChild(item);
+    });
+    c.appendChild(breakdown);
+    c.appendChild(el("div",{class:"stat-label"}, "Attività per stato"));
+    return c;
+  }
+  if(key==="overdue"){
+    const over = ctx.overdue.length>0;
+    const c = el("div",{class:"stat-card", style: over ? "border-left-color:var(--urgent-text, var(--rust));" : ""});
+    c.appendChild(el("div",{class:"stat-value", style: over ? "color:var(--urgent-text, var(--rust));" : ""}, String(ctx.overdue.length)));
+    c.appendChild(el("div",{class:"stat-label"}, "Attività in ritardo"));
+    return c;
+  }
+  if(key==="budget"){
+    if(!ctx.hasMoneyData) return null;
+    const over = ctx.totCost>ctx.totBudget;
+    const c = el("div",{class:"stat-card wide-mobile", style: over ? "border-left-color:var(--urgent-text, var(--rust));" : ""});
+    c.appendChild(el("div",{class:"stat-value", style: over ? "color:var(--urgent-text, var(--rust));" : ""}, "€"+fmtEuro(ctx.totCost)+" / €"+fmtEuro(ctx.totBudget)));
+    c.appendChild(el("div",{class:"stat-label"}, "Speso su budget totale"));
+    return c;
+  }
+  return null;
+}
+// drag basato su Pointer Events, stesso meccanismo già usato per le card KPI della Home
+// (funziona sia con mouse che con dito su schermo touch, a differenza del drag&drop HTML5)
+function attachProjectStatDrag(grip, card, row, key){
+  let dragging = false;
+  grip.addEventListener("pointerdown",(e)=>{
+    e.preventDefault();
+    dragging = true;
+    card.classList.add("dragging");
+    try{ grip.setPointerCapture(e.pointerId); }catch(err){}
+  });
+  grip.addEventListener("pointermove",(e)=>{
+    if(!dragging) return;
+    const under = document.elementFromPoint(e.clientX, e.clientY);
+    const overCard = under && under.closest(".stat-card");
+    row.querySelectorAll(".stat-card").forEach(c=>c.classList.remove("drag-over"));
+    if(overCard && overCard!==card) overCard.classList.add("drag-over");
+  });
+  function endDrag(e){
+    if(!dragging) return;
+    dragging = false;
+    card.classList.remove("dragging");
+    const under = document.elementFromPoint(e.clientX, e.clientY);
+    const overCard = under && under.closest(".stat-card");
+    row.querySelectorAll(".stat-card").forEach(c=>c.classList.remove("drag-over"));
+    if(overCard && overCard!==card){
+      const targetKey = overCard.dataset.statKey;
+      const arr = state.dashboard.projectStatsOrder;
+      const fromIdx = arr.indexOf(key);
+      const toIdx = arr.indexOf(targetKey);
+      if(fromIdx>-1 && toIdx>-1){
+        const [moved] = arr.splice(fromIdx,1);
+        arr.splice(toIdx,0,moved);
+        store.setQuiet(privKey("dashboard"), state.dashboard);
+        render("progetti");
+      }
+    }
+  }
+  grip.addEventListener("pointerup", endDrag);
+  grip.addEventListener("pointercancel", endDrag);
+}
+function openProjectStatsSettingsModal(){
+  openModal((modal, close)=>{
+    modal.appendChild(el("h3",{},"Card KPI di Progetti"));
+    modal.appendChild(el("div",{style:"font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;"},"Scegli quali mostrare (l'ordine si cambia trascinando le card):"));
+    const checks = {};
+    state.dashboard.projectStatsOrder.forEach(key=>{
+      const row = el("div",{class:"kpi-check-row"});
+      const cb = el("input",{type:"checkbox"});
+      cb.checked = !state.dashboard.projectStatsHidden.includes(key);
+      checks[key] = cb;
+      row.appendChild(cb);
+      row.appendChild(el("span",{}, PROJECT_STAT_LABELS[key] || key));
+      modal.appendChild(row);
+    });
+    const actions = el("div",{class:"modal-actions"});
+    const cancelBtn = el("button",{class:"btn ghost"},"Annulla");
+    cancelBtn.addEventListener("click", close);
+    const saveBtn = el("button",{class:"btn primary"},"Salva");
+    saveBtn.addEventListener("click", ()=>{
+      state.dashboard.projectStatsHidden = Object.keys(checks).filter(key=>!checks[key].checked);
+      store.set(privKey("dashboard"), state.dashboard);
+      close(); render("progetti");
+    });
+    actions.appendChild(cancelBtn); actions.appendChild(saveBtn);
+    modal.appendChild(actions);
+  });
+}
 function renderProjectDashboard(detail, project, tasks, totalPct, totBudget, totCost, hasMoneyData){
   const todayIso = isoDate(new Date());
   const statusCounts = { todo:0, doing:0, done:0 };
@@ -5873,38 +5996,28 @@ function renderProjectDashboard(detail, project, tasks, totalPct, totBudget, tot
   const upcoming = tasks.filter(t=> t.status!=="done" && t.end && t.end >= todayIso)
     .sort((a,b)=> a.end < b.end ? -1 : 1).slice(0,5);
 
-  const statsRow = el("div",{class:"stats-row"});
+  const statsCtx = { tasks, totalPct, statusCounts, overdue, hasMoneyData, totCost, totBudget };
 
-  const c1 = el("div",{class:"stat-card"});
-  c1.appendChild(el("div",{class:"stat-value"}, totalPct+"%"));
-  c1.appendChild(el("div",{class:"stat-label"}, "Avanzamento medio · "+tasks.length+(tasks.length===1?" attività":" attività")));
-  statsRow.appendChild(c1);
+  const statsActions = el("div",{class:"todo-header-actions", style:"margin-bottom:8px;"});
+  const statsEditBtn = el("button",{class:"btn ghost small"},"Modifica card");
+  statsEditBtn.addEventListener("click", openProjectStatsSettingsModal);
+  statsActions.appendChild(statsEditBtn);
+  detail.appendChild(statsActions);
 
-  const c2 = el("div",{class:"stat-card"});
-  c2.appendChild(el("div",{class:"stat-value"}, String(tasks.length)));
-  const breakdown = el("div",{class:"project-status-breakdown"});
-  [["todo","Da fare"],["doing","In corso"],["done","Fatto"]].forEach(([status,label])=>{
-    const item = el("div",{class:"project-status-breakdown-item"});
-    item.appendChild(el("span",{class:"gantt-group-dot "+status}));
-    item.appendChild(el("span",{}, label+" "+statusCounts[status]));
-    breakdown.appendChild(item);
+  const statsRow = el("div",{class:"stats-row project-stats-row"});
+  const visibleStatKeys = state.dashboard.projectStatsOrder.filter(key=>
+    !state.dashboard.projectStatsHidden.includes(key) && (key!=="budget" || hasMoneyData)
+  );
+  visibleStatKeys.forEach(key=>{
+    const card = projectStatCard(key, statsCtx);
+    if(!card) return;
+    card.classList.add("kpi-draggable");
+    card.dataset.statKey = key;
+    const grip = el("span",{class:"kpi-drag-grip", html:ICON_GRIP, title:"Trascina per riordinare"});
+    card.appendChild(grip);
+    attachProjectStatDrag(grip, card, statsRow, key);
+    statsRow.appendChild(card);
   });
-  c2.appendChild(breakdown);
-  c2.appendChild(el("div",{class:"stat-label"}, "Attività per stato"));
-  statsRow.appendChild(c2);
-
-  const c3 = el("div",{class:"stat-card", style: overdue.length ? "border-left-color:var(--urgent-text, var(--rust));" : ""});
-  c3.appendChild(el("div",{class:"stat-value", style: overdue.length ? "color:var(--urgent-text, var(--rust));" : ""}, String(overdue.length)));
-  c3.appendChild(el("div",{class:"stat-label"}, "Attività in ritardo"));
-  statsRow.appendChild(c3);
-
-  if(hasMoneyData){
-    const over = totCost>totBudget;
-    const c4 = el("div",{class:"stat-card", style: over ? "border-left-color:var(--urgent-text, var(--rust));" : ""});
-    c4.appendChild(el("div",{class:"stat-value", style: over ? "color:var(--urgent-text, var(--rust));" : ""}, "€"+fmtEuro(totCost)+" / €"+fmtEuro(totBudget)));
-    c4.appendChild(el("div",{class:"stat-label"}, "Speso su budget totale"));
-    statsRow.appendChild(c4);
-  }
   detail.appendChild(statsRow);
 
   const lists = el("div",{class:"project-dash-lists"});

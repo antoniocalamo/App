@@ -1902,7 +1902,7 @@ const DEFAULTS = {
   trips: [],
   bbqs: [],
   tires: [],
-  finance: { liquidity: [], nonliquid: [], debts: [], history: [], investments: [], investAutoPriceEnabled: false, cashflow:{incomes:[], expenses:[]} },
+  finance: { liquidity: [], nonliquid: [], debts: [], history: [], investments: [], investAutoPriceEnabled: false, investRealizedArchive: 0, cashflow:{incomes:[], expenses:[]} },
   sharedBoards: [],
   projects: [],
   weatherLocation: {name:"Milano", lat:45.4642, lon:9.19}
@@ -2875,6 +2875,7 @@ async function loadAll(){
   if(!state.finance.cashflow || !state.finance.cashflow.incomes){ state.finance.cashflow = {incomes:[], expenses:[]}; }
   if(!state.finance.investments) state.finance.investments = [];
   if(state.finance.investAutoPriceEnabled===undefined) state.finance.investAutoPriceEnabled = false;
+  if(state.finance.investRealizedArchive===undefined) state.finance.investRealizedArchive = 0;
   if(state.finance.investments.length){
     const merged = {};
     const order = [];
@@ -8079,23 +8080,27 @@ function renderFinanzeInvestimenti(main){
   const invs = state.finance.investments || [];
 
   const rows = invs.map(inv=>{
-    const {qty, cost, avgBuyPrice} = investLotsTotals(inv);
+    const {qty, cost, avgBuyPrice, realized} = investLotsTotals(inv);
     const isEUR = !inv.currency || inv.currency==="EUR";
     const fx = inv.fxRate!=null ? inv.fxRate : (isEUR?1:null);
     const priceKnown = inv.lastPrice!=null;
     const priceNative = priceKnown ? inv.lastPrice : avgBuyPrice;
     let valueEUR = null, costEUR = null;
+    // il P&L realizzato converte in € al tasso di cambio più recente disponibile (come il resto
+    // della riga), non a quello storico del giorno della vendita: non lo teniamo in memoria
+    const realizedEUR = fx!=null ? realized*fx : null;
     if(fx!=null){
       valueEUR = qty*priceNative*fx;
       costEUR = cost*fx; // conversione al tasso di cambio più recente, non a quello storico d'acquisto
     }
-    return { inv, qty, cost, avgBuyPrice, isEUR, fx, priceNative, priceKnown, valueEUR, costEUR };
+    return { inv, qty, cost, avgBuyPrice, isEUR, fx, priceNative, priceKnown, valueEUR, costEUR, realized, realizedEUR };
   });
 
-  let totalEUR = 0, totalCostEUR = 0;
+  let totalEUR = 0, totalCostEUR = 0, totalRealizedEUR = state.finance.investRealizedArchive||0;
   const otherCurrencies = new Set();
   rows.forEach(r=>{
     if(r.valueEUR!=null){ totalEUR += r.valueEUR; totalCostEUR += r.costEUR; }
+    if(r.realizedEUR!=null) totalRealizedEUR += r.realizedEUR;
     if(!r.isEUR) otherCurrencies.add(r.inv.currency);
   });
   const totalPnl = totalEUR-totalCostEUR;
@@ -8107,9 +8112,18 @@ function renderFinanzeInvestimenti(main){
     el("span",{class:"finance-total-label"},"Totale portafoglio"),
     el("span",{class:"finance-total-value"}, fmtEUR(totalEUR))
   ]));
-  totalsBar.appendChild(el("div",{class:"invest-pnl "+(totalPnl>=0?"positive":"negative"), style:"font-size:16px;"},
-    (totalPnl>=0?"+":"")+fmtEUR(totalPnl)+(totalPnlPct!=null?" ("+(totalPnlPct>=0?"+":"")+totalPnlPct.toFixed(1)+"%)":"")
-  ));
+  totalsBar.appendChild(el("div",{},[
+    el("span",{class:"finance-total-label"},"P&L non realizzato"),
+    el("div",{class:"invest-pnl "+(totalPnl>=0?"positive":"negative"), style:"font-size:16px;"},
+      (totalPnl>=0?"+":"")+fmtEUR(totalPnl)+(totalPnlPct!=null?" ("+(totalPnlPct>=0?"+":"")+totalPnlPct.toFixed(1)+"%)":"")
+    )
+  ]));
+  totalsBar.appendChild(el("div",{},[
+    el("span",{class:"finance-total-label"},"P&L realizzato (storico)"),
+    el("div",{class:"invest-pnl "+(totalRealizedEUR>=0?"positive":"negative"), style:"font-size:16px;"},
+      (totalRealizedEUR>=0?"+":"")+fmtEUR(totalRealizedEUR)
+    )
+  ]));
   main.appendChild(totalsBar);
   if(otherCurrencies.size){
     main.appendChild(el("div",{class:"finance-note"},
@@ -8149,6 +8163,11 @@ function renderFinanzeInvestimenti(main){
       const updText = isStale ? "mai aggiornato — prezzo di carico" : "prezzo agg. il "+new Date(inv.lastPriceAt).toLocaleDateString("it-IT",{day:"2-digit",month:"2-digit",year:"2-digit"});
       mainCol.appendChild(el("span",{class:"invest-updated"+(isStale?" stale":"")}, updText));
     }
+    if(r.realizedEUR){
+      mainCol.appendChild(el("span",{class:"invest-pnl "+(r.realizedEUR>=0?"positive":"negative"), style:"font-size:10.5px; text-align:left; margin-top:1px;"},
+        "Realizzato: "+(r.realizedEUR>=0?"+":"")+fmtEUR(r.realizedEUR)
+      ));
+    }
     row.appendChild(mainCol);
     row.appendChild(el("div",{class:"invest-qty"},
       r.qty+" × "+fmtNativeAmount(r.priceNative, inv.currency)+(!r.priceKnown?" (carico)":"")
@@ -8169,7 +8188,9 @@ function renderFinanzeInvestimenti(main){
     rowActions.appendChild(priceBtn);
     const del = el("span",{class:"del", html:"✕"});
     del.addEventListener("click", ()=>{
-      if(confirm("Rimuovere "+inv.symbol+" (tutti gli ordini) dal portafoglio?")){
+      const archiveNote = r.realizedEUR ? " Il P&L realizzato ("+(r.realizedEUR>=0?"+":"")+fmtEUR(r.realizedEUR)+") resterà conteggiato nel totale storico." : "";
+      if(confirm("Rimuovere "+inv.symbol+" (tutti gli ordini) dal portafoglio?"+archiveNote)){
+        if(r.realizedEUR) state.finance.investRealizedArchive = (state.finance.investRealizedArchive||0) + r.realizedEUR;
         state.finance.investments = state.finance.investments.filter(i=>i!==inv);
         store.set(privKey("finance"), state.finance); render("finanze");
       }

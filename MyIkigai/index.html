@@ -8990,6 +8990,12 @@ function render(tab){
   // selezionata ricostruisce tutta la scheda, altrimenti lo scroll tornerebbe sempre in cima).
   const prevMain = document.getElementById("main");
   const savedMainScroll = prevMain ? prevMain.scrollTop : 0;
+  // Stessa idea per lo scorrimento/pan DENTRO la board dell'Orto: selezionare una pianta (o
+  // qualunque altra modifica che richiami render("orto")) ricrea la board da zero, quindi senza
+  // questo la vista tornerebbe sempre nell'angolo in alto a sinistra perdendo lo zoom/pan fatto.
+  const prevBoardWrap = document.querySelector(".orto-board-wrap");
+  const savedBoardScrollLeft = prevBoardWrap ? prevBoardWrap.scrollLeft : 0;
+  const savedBoardScrollTop = prevBoardWrap ? prevBoardWrap.scrollTop : 0;
   const main = clear(document.getElementById("main"));
   if(tab==="dashboard") renderDashboard(main);
   else if(tab==="orto") renderOrto(main);
@@ -9045,6 +9051,11 @@ function render(tab){
   const newCollList = main.querySelector(".coll-list");
   if(newCollList && savedCollListScroll) newCollList.scrollLeft = savedCollListScroll;
   if(savedMainScroll) main.scrollTop = savedMainScroll;
+  const newBoardWrap = main.querySelector(".orto-board-wrap");
+  if(newBoardWrap && (savedBoardScrollLeft || savedBoardScrollTop)){
+    newBoardWrap.scrollLeft = savedBoardScrollLeft;
+    newBoardWrap.scrollTop = savedBoardScrollTop;
+  }
 }
 
 setupMobileViewportPin();

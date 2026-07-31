@@ -1675,7 +1675,7 @@ input.cashflow-item-occ-input{
   .todo-actions-wrap{display:flex; flex-direction:column; gap:0; width:100%; min-width:0;}
   .finance-grid{grid-template-columns:1fr; gap:14px;}
   /* Contenuti larghi: scroll orizzontale dedicato invece di schiacciare tutto */
-  .orto-layout{flex-direction:column;}
+  .orto-layout{flex-direction:column; align-items:stretch;}
   .orto-detail-panel{width:100%;}
   /* Orto: controlli minuscoli pensati per mouse diventano target di tocco più grandi,
      restando ancorati allo stesso angolo così non sconfinano sugli oggetti vicini */
@@ -4446,6 +4446,7 @@ let activeCommentId = null;
 let selectedOrtoObjId = null;
 let ortoZoom = 1;
 let ortoHandMode = false;
+let ortoPendingObjectCancel = null; // funzione per annullare un trascinamento di oggetto in corso, richiamata quando arriva un secondo dito per il pinch
 const ORTO_CANVAS_W = 1800, ORTO_CANVAS_H = 1100;
 let ortoClipboard = null;
 let ortoKeyListenerAttached = false;
@@ -4555,6 +4556,17 @@ function bedRotationWarning(bedObj){
   }
   return null;
 }
+function ortoContentBounds(){
+  // area realmente occupata da piante/elementi/commenti, con un piccolo margine — serve al
+  // pulsante "adatta allo schermo" per non zoomare su tutta la tela 1800x1100 se l'orto reale
+  // ne usa solo una parte, sprecando spazio su terra/griglia vuota
+  const objs = state.orto.objects||[], comments = state.orto.comments||[];
+  if(!objs.length && !comments.length) return {w:ORTO_CANVAS_W, h:ORTO_CANVAS_H};
+  let maxX = 0, maxY = 0;
+  objs.forEach(o=>{ maxX = Math.max(maxX, (o.x||0)+(o.w||130)); maxY = Math.max(maxY, (o.y||0)+(o.h||82)); });
+  comments.forEach(c=>{ maxX = Math.max(maxX, (c.x||0)+26); maxY = Math.max(maxY, (c.y||0)+26); });
+  return {w:Math.min(ORTO_CANVAS_W, maxX+40), h:Math.min(ORTO_CANVAS_H, maxY+40)};
+}
 function renderOrto(main){
   ensureOrtoKeyListener();
   main.appendChild(el("div",{class:"section-head"},[
@@ -4585,11 +4597,12 @@ function renderOrto(main){
   zoomInBtn.addEventListener("click", ()=>{ ortoZoom = Math.min(ZOOM_MAX, Math.round((ortoZoom+ZOOM_STEP)*100)/100); render("orto"); });
   const zoomResetBtn = el("button",{class:"orto-zoom-btn", title:"Reimposta zoom (100%)"}, "⟲");
   zoomResetBtn.addEventListener("click", ()=>{ ortoZoom = 1; render("orto"); });
-  const zoomFitBtn = el("button",{class:"orto-zoom-btn", title:"Adatta la board alla larghezza dello schermo"}, "⤢");
+  const zoomFitBtn = el("button",{class:"orto-zoom-btn", title:"Adatta la board a ciò che hai già disegnato"}, "⤢");
   zoomFitBtn.addEventListener("click", ()=>{
-    const availW = boardWrap.clientWidth;
-    if(!availW) return;
-    let z = (availW-4) / ORTO_CANVAS_W;
+    const availW = boardWrap.clientWidth, availH = boardWrap.clientHeight;
+    if(!availW || !availH) return;
+    const bounds = ortoContentBounds();
+    let z = Math.min((availW-4)/bounds.w, (availH-4)/bounds.h);
     z = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(z*100)/100));
     ortoZoom = z;
     render("orto");
@@ -4656,6 +4669,55 @@ function renderOrto(main){
       boardWrap.addEventListener("pointerup", up);
     });
   }
+  // Pinch-to-zoom + pan a due dita (indipendente dalla modalità "Mano", che riguarda solo
+  // il dito singolo col mouse/touch). Il punto medio tra le due dita resta "ancorato" allo
+  // stesso punto della board mentre si allontanano/avvicinano o si spostano insieme.
+  (function setupOrtoPinch(){
+    const touches = new Map(); // pointerId -> {x,y}
+    let pinchActive = false, startDist = 0, startZoom = 1, worldX = 0, worldY = 0;
+    function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+    function mid(a,b){ return {x:(a.x+b.x)/2, y:(a.y+b.y)/2}; }
+    boardWrap.addEventListener("pointerdown",(e)=>{
+      if(e.pointerType!=="touch") return;
+      touches.set(e.pointerId, {x:e.clientX, y:e.clientY});
+      if(touches.size===2){
+        if(ortoPendingObjectCancel){ const c = ortoPendingObjectCancel; ortoPendingObjectCancel = null; c(); }
+        const pts = [...touches.values()];
+        startDist = dist(pts[0], pts[1]);
+        startZoom = ortoZoom;
+        const rect = boardWrap.getBoundingClientRect();
+        const m = mid(pts[0], pts[1]);
+        worldX = (boardWrap.scrollLeft + (m.x-rect.left)) / startZoom;
+        worldY = (boardWrap.scrollTop + (m.y-rect.top)) / startZoom;
+        pinchActive = true;
+      }
+    });
+    boardWrap.addEventListener("pointermove",(e)=>{
+      if(e.pointerType!=="touch" || !touches.has(e.pointerId)) return;
+      touches.set(e.pointerId, {x:e.clientX, y:e.clientY});
+      if(!pinchActive || touches.size!==2 || startDist===0) return;
+      e.preventDefault();
+      const pts = [...touches.values()];
+      let z = startZoom * (dist(pts[0], pts[1]) / startDist);
+      z = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+      ortoZoom = z;
+      sizer.style.width = (ORTO_CANVAS_W*z)+"px";
+      sizer.style.height = (ORTO_CANVAS_H*z)+"px";
+      board.style.transform = `scale(${z})`;
+      const rect = boardWrap.getBoundingClientRect();
+      const m = mid(pts[0], pts[1]);
+      boardWrap.scrollLeft = worldX*z - (m.x-rect.left);
+      boardWrap.scrollTop = worldY*z - (m.y-rect.top);
+      zoomLabel.textContent = Math.round(z*100)+"%";
+    });
+    function endTouch(e){
+      if(e.pointerType!=="touch") return;
+      touches.delete(e.pointerId);
+      if(touches.size<2 && pinchActive){ pinchActive = false; render("orto"); }
+    }
+    boardWrap.addEventListener("pointerup", endTouch);
+    boardWrap.addEventListener("pointercancel", endTouch);
+  })();
   layoutWrap.appendChild(boardWrap);
 
   function ortoZBand(o){
@@ -5220,6 +5282,7 @@ function makeDraggable(handleEl, item, board, opts={}){
       handleEl.removeEventListener("pointerup", up);
       handleEl.removeEventListener("pointercancel", cancel);
       moveTarget.classList.remove("orto-picked-up");
+      if(ortoPendingObjectCancel === detach) ortoPendingObjectCancel = null;
     }
     function move(ev){
       if(!dragActive){
@@ -5251,6 +5314,7 @@ function makeDraggable(handleEl, item, board, opts={}){
     }
     function cancel(){ detach(); } // il browser ha preso il gesto per sé (es. scroll nativo)
     if(isTouch){
+      ortoPendingObjectCancel = detach; // un secondo dito (pinch) può annullare questo trascinamento in attesa
       longPressTimer = setTimeout(()=>{ longPressTimer = null; activateDrag(); }, LONG_PRESS_MS);
     } else {
       e.preventDefault();

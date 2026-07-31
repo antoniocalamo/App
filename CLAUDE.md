@@ -11,8 +11,10 @@ HTML/CSS/JS, backend Supabase, pubblicata su GitHub Pages.
 - URL pubblico: https://antoniocalamo.github.io/App/MyIkigai/
 - Backend Supabase con 2 utenti reali: io (admin, via `isAdmin()`) e mia moglie
   (utente base). Attenzione quando tocchi permessi/segregazione dati.
-- Non sono uno sviluppatore: se un termine tecnico è utile per capire una
-  scelta o una modifica, spiegalo in modo semplice.
+- Non sono uno sviluppatore: usa sempre un linguaggio chiaro e semplice.
+  Ogni termine tecnico (git, pull request, branch, commit, deploy, ecc.) va
+  spiegato con parole semplici/analogie la prima volta che lo usi in una
+  conversazione, non solo "se utile" — per me non è mai scontato.
 
 ## Struttura dell'app
 Schede principali: Home (to-do settimanale + backlog + widget/KPI + meteo +

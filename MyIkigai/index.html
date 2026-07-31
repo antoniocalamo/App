@@ -8986,6 +8986,10 @@ function render(tab){
   // riparte sempre dall'inizio.
   const prevCollList = document.querySelector(".coll-list");
   const savedCollListScroll = prevCollList ? prevCollList.scrollLeft : 0;
+  // Stessa idea per lo scroll verticale principale della pagina (es. Orto: cambiare la pianta
+  // selezionata ricostruisce tutta la scheda, altrimenti lo scroll tornerebbe sempre in cima).
+  const prevMain = document.getElementById("main");
+  const savedMainScroll = prevMain ? prevMain.scrollTop : 0;
   const main = clear(document.getElementById("main"));
   if(tab==="dashboard") renderDashboard(main);
   else if(tab==="orto") renderOrto(main);
@@ -9032,6 +9036,7 @@ function render(tab){
       main2.querySelectorAll("textarea:not(.gantt-timeline-name)").forEach(ta=>autoResize(ta));
       const newCollList2 = main2.querySelector(".coll-list");
       if(newCollList2 && savedCollListScroll) newCollList2.scrollLeft = savedCollListScroll;
+      if(savedMainScroll) main2.scrollTop = savedMainScroll;
     });
   }
   main.querySelectorAll("textarea:not(.gantt-timeline-name)").forEach(ta=>autoResize(ta));
@@ -9039,6 +9044,7 @@ function render(tab){
   if(newActionsBar && savedActionsScroll) newActionsBar.scrollLeft = savedActionsScroll;
   const newCollList = main.querySelector(".coll-list");
   if(newCollList && savedCollListScroll) newCollList.scrollLeft = savedCollListScroll;
+  if(savedMainScroll) main.scrollTop = savedMainScroll;
 }
 
 setupMobileViewportPin();

@@ -1706,6 +1706,11 @@ input.cashflow-item-occ-input{
   }
   .day-row.today .day-label{display:block; padding:6px 12px; border-radius:8px;}
   .day-row-history .day-label{background:transparent; color:var(--ink-soft); padding:0 2px;}
+  /* Checkbox, "importante" e "sotto-task" dei task un po' più grandi, per essere cliccabili col dito */
+  .action-grid input[type=checkbox]{width:20px; height:20px;}
+  .action-grid .urgent-flag, .add-sub-flag{width:20px; height:20px; font-size:12px;}
+  .add-sub-flag{width:38px;}
+  .action-grid, .action-grid-row{gap:4px;}
   .collection{flex-direction:column;}
   .coll-list{
     width:100%; flex-direction:row; flex-wrap:nowrap; flex-shrink:0;
@@ -2642,6 +2647,7 @@ function buildProjectDayTasks(dateStr){
   const items = [];
   (state.projects||[]).forEach(project=>{
     ((project.data&&project.data.tasks)||[]).forEach(t=>{
+      if(state.dashboard.showCompleted===false && t.status==="done") return;
       if(t.start===dateStr) items.push({project, task:t, kind:"start"});
       else if(t.end===dateStr) items.push({project, task:t, kind:"end"});
     });

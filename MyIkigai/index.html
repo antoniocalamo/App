@@ -4600,12 +4600,12 @@ function renderOrto(main){
   zoomInBtn.addEventListener("click", ()=>{ ortoZoom = Math.min(ZOOM_MAX, Math.round((ortoZoom+ZOOM_STEP)*100)/100); render("orto"); });
   const zoomResetBtn = el("button",{class:"orto-zoom-btn", title:"Reimposta zoom (100%)"}, "⟲");
   zoomResetBtn.addEventListener("click", ()=>{ ortoZoom = 1; render("orto"); });
-  const zoomFitBtn = el("button",{class:"orto-zoom-btn", title:"Adatta la board a ciò che hai già disegnato"}, "⤢");
+  const zoomFitBtn = el("button",{class:"orto-zoom-btn", title:"Adatta la board alla larghezza dello schermo"}, "⤢");
   zoomFitBtn.addEventListener("click", ()=>{
-    const availW = boardWrap.clientWidth, availH = boardWrap.clientHeight;
-    if(!availW || !availH) return;
+    const availW = boardWrap.clientWidth;
+    if(!availW) return;
     const bounds = ortoContentBounds();
-    let z = Math.min((availW-4)/bounds.w, (availH-4)/bounds.h);
+    let z = (availW-4) / bounds.w;
     z = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(z*100)/100));
     ortoZoom = z;
     render("orto");

@@ -4576,7 +4576,7 @@ function renderOrto(main){
   toolbar.appendChild(addCommentBtn);
 
 
-  const ZOOM_MIN = 0.4, ZOOM_MAX = 2.2, ZOOM_STEP = 0.15;
+  const ZOOM_MIN = 0.2, ZOOM_MAX = 2.2, ZOOM_STEP = 0.15;
   const zoomControls = el("div",{class:"orto-zoom-controls"});
   const zoomOutBtn = el("button",{class:"orto-zoom-btn", title:"Zoom out (rivela più griglia)"}, "−");
   zoomOutBtn.addEventListener("click", ()=>{ ortoZoom = Math.max(ZOOM_MIN, Math.round((ortoZoom-ZOOM_STEP)*100)/100); render("orto"); });

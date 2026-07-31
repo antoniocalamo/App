@@ -6669,18 +6669,30 @@ function openAmortizationModal(item, onSave){
       fileInput.addEventListener("change", ()=>{
         const file = fileInput.files[0];
         if(!file) return;
-        ensureXLSXLoaded().catch(()=>{});
+        const isCsv = /\.csv$/i.test(file.name);
         const reader = new FileReader();
-        reader.onload = async (e)=>{
-          try{
-            await ensureXLSXLoaded();
-            const wb = XLSX.read(e.target.result, {type:"array", cellDates:false});
-            const sheet = wb.Sheets[wb.SheetNames[0]];
-            excelRows = normalizeSheetRows(XLSX.utils.sheet_to_json(sheet, {header:1, raw:true}));
-            excelPreview.textContent = excelRows.length + " righe lette.";
-          }catch(err){ excelPreview.textContent = "Errore lettura file: "+err.message; excelRows=null; }
-        };
-        reader.readAsArrayBuffer(file);
+        if(isCsv){
+          reader.onload = (e)=>{
+            try{
+              const text = String(e.target.result||"");
+              excelRows = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length).map(l=>l.split(";").map(p=>p.trim()));
+              excelPreview.textContent = excelRows.length + " righe lette.";
+            }catch(err){ excelPreview.textContent = "Errore lettura file: "+err.message; excelRows=null; }
+          };
+          reader.readAsText(file, "UTF-8");
+        } else {
+          ensureXLSXLoaded().catch(()=>{});
+          reader.onload = async (e)=>{
+            try{
+              await ensureXLSXLoaded();
+              const wb = XLSX.read(e.target.result, {type:"array", cellDates:false});
+              const sheet = wb.Sheets[wb.SheetNames[0]];
+              excelRows = normalizeSheetRows(XLSX.utils.sheet_to_json(sheet, {header:1, raw:true}));
+              excelPreview.textContent = excelRows.length + " righe lette.";
+            }catch(err){ excelPreview.textContent = "Errore lettura file: "+err.message; excelRows=null; }
+          };
+          reader.readAsArrayBuffer(file);
+        }
       });
       excelSection.appendChild(fileInput); excelSection.appendChild(excelPreview);
       modal.appendChild(excelSection);

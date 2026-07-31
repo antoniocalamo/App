@@ -49,8 +49,9 @@ Pattern di codice ricorrenti:
 - Dopo ogni modifica, verifica la sintassi JS prima di finire (es. estrarre il
   contenuto tra i tag `<script>` e lanciare `node --check`, oppure eseguire
   l'app in locale se possibile).
-- Quando proponi modifiche di design/UI non banali, mostra prima un mockup o
-  una descrizione chiara invece di modificare direttamente alla cieca.
+- Mostra un mockup o una descrizione prima di modificare solo se lo chiedo io
+  esplicitamente in anticipo ("fammi vedere prima come verrebbe..."). Se non lo
+  chiedo, procedi direttamente.
 - Per bug di CSS/layout che non si risolvono al primo tentativo, crea un file
   di test isolato con dati finti invece di continuare a tentare sull'app
   intera.
@@ -73,6 +74,10 @@ Pattern di codice ricorrenti:
   mano) — puoi quindi leggere, modificare e fare commit/push direttamente sul
   repo quando è chiaro cosa fare. Per modifiche rischiose o ambigue, chiedi
   prima di procedere.
+- **Pubblica sempre subito** (commit, merge sul branch principale e push) non
+  appena una modifica è pronta e verificata, senza chiedermi conferma ogni
+  volta — a meno che non sia io a chiederti esplicitamente in anticipo un
+  mockup o un test preventivo prima di renderla definitiva (vedi punto sopra).
 
 ## Come mi piace lavorare
 - Spiegazioni chiare e dirette, senza fronzoli.

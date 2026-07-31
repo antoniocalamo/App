@@ -38,6 +38,13 @@ Pattern di codice ricorrenti:
   `max-width:880px`), non con rendering JS condizionale separato.
 
 ## Regole di lavoro
+- **Prima di ogni modifica**, scarica sempre l'ultima versione pubblicata su
+  GitHub (`git fetch`) e riparti da quella, anche a metà di una conversazione
+  già avviata — non fidarti della copia locale se è passato tempo dall'ultimo
+  controllo. Serve perché più sessioni di Claude Code possono lavorare in
+  parallelo su parti diverse dell'app (es. una su Orto, una su Finanze): senza
+  questo controllo si rischia di sovrascrivere per errore modifiche che
+  un'altra sessione ha già pubblicato nel frattempo.
 - **Non alzare mai `APP_VERSION`** a meno che non venga chiesto esplicitamente.
 - Dopo ogni modifica, verifica la sintassi JS prima di finire (es. estrarre il
   contenuto tra i tag `<script>` e lanciare `node --check`, oppure eseguire

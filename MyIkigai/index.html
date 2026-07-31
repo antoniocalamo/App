@@ -551,6 +551,7 @@ textarea{resize:vertical;}
 
 /* ---- Orto board ---- */
 .orto-toolbar{display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; align-items:center;}
+.orto-toolbar-fields{display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-left:auto;}
 .weather-chip{
   display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-soft);
   background:var(--card); border:1px solid var(--line); border-radius:10px;
@@ -757,7 +758,7 @@ textarea{resize:vertical;}
 .orto-detail-close{cursor:pointer; font-size:12px; color:var(--ink-soft); opacity:.7; flex-shrink:0;}
 .orto-detail-close:hover{opacity:1;}
 .orto-detail-field{display:flex; flex-direction:column; gap:2px; margin-bottom:7px; font-size:10px; color:var(--ink-soft); font-weight:600;}
-.orto-detail-field input{width:100%; font-size:11.5px; padding:4px 6px;}
+.orto-detail-field input{width:100%; min-width:0; font-size:11.5px; padding:4px 6px;}
 .orto-detail-empty{
   display:flex; flex-direction:column; align-items:center; text-align:center; gap:8px;
   padding:14px 4px; color:var(--ink-soft); font-size:10.5px; line-height:1.45;
@@ -1699,6 +1700,8 @@ input.cashflow-item-occ-input{
   .frame-transp-toggle{width:18px; height:18px;}
   .orto-comment-pin{width:30px; height:30px;}
   .orto-comment-icon{width:17px; height:17px;}
+  .orto-seasons-btn{flex:1 1 100%; text-align:center;}
+  .orto-toolbar-fields{margin-left:0; width:100%;}
   .modal-card{padding:20px 18px; max-width:calc(100vw - 32px);}
   .login-screen{padding:16px;}
   .gantt-labels-col{width:114px;}
@@ -4625,17 +4628,21 @@ function renderOrto(main){
   toolbar.appendChild(handBtn);
 
   const activeSeasonForBtn = getActiveOrtoSeason();
-  const seasonsBtn = el("button",{class:"btn ghost"}, "📅 Stagioni" + (activeSeasonForBtn ? " · "+activeSeasonForBtn.season+" "+activeSeasonForBtn.year : ""));
+  const seasonsBtn = el("button",{class:"btn ghost orto-seasons-btn"}, "📅 Stagioni" + (activeSeasonForBtn ? " · "+activeSeasonForBtn.season+" "+activeSeasonForBtn.year : ""));
   seasonsBtn.addEventListener("click", openOrtoSeasonsModal);
   toolbar.appendChild(seasonsBtn);
 
+  // Raggruppate insieme (invece che come due voci separate della toolbar) così, quando lo
+  // spazio non basta, vanno a capo come un blocco unico allineato a destra invece di lasciare
+  // una singola voce isolata con un grosso vuoto accanto.
+  const toolbarFields = el("div",{class:"orto-toolbar-fields"});
   const waterField = el("label",{style:"display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-soft);font-weight:600;"});
   waterField.appendChild(el("span",{class:"box-icon", html:ICON_DROP, style:"color:var(--teal);"}));
   waterField.appendChild(document.createTextNode("Ultima annaffiata/pioggia"));
   const waterInput = el("input",{type:"date", value:state.orto.lastWatered||"", style:"width:auto;"});
   waterInput.addEventListener("change", ()=>{ state.orto.lastWatered = waterInput.value; store.set("orto", state.orto); render("orto"); });
   waterField.appendChild(waterInput);
-  toolbar.appendChild(waterField);
+  toolbarFields.appendChild(waterField);
 
   const fertField = el("label",{style:"display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-soft);font-weight:600;"});
   fertField.appendChild(el("span",{class:"box-icon", html:ICON_SPROUT, style:"color:var(--leaf);"}));
@@ -4643,7 +4650,8 @@ function renderOrto(main){
   const fertInput = el("input",{type:"date", value:state.orto.lastFertilized||"", style:"width:auto;"});
   fertInput.addEventListener("change", ()=>{ state.orto.lastFertilized = fertInput.value; store.set("orto", state.orto); render("orto"); });
   fertField.appendChild(fertInput);
-  toolbar.appendChild(fertField);
+  toolbarFields.appendChild(fertField);
+  toolbar.appendChild(toolbarFields);
 
   main.appendChild(toolbar);
 

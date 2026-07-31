@@ -870,6 +870,39 @@ input.pack-num{
   border-bottom:2px solid transparent;
 }
 .row-resize-handle:hover{border-bottom-color:var(--forest);}
+.gen-col-head-row{display:flex; align-items:center; gap:5px;}
+.gen-col-grip{width:11px; height:14px; flex-shrink:0; opacity:.35; cursor:grab; touch-action:none;}
+.gen-col-grip svg{width:100%; height:100%; display:block;}
+.gen-col-grip:hover{opacity:.8;}
+.gen-cell.dragging{opacity:.4;}
+.gen-cell.drag-over{outline:2px dashed var(--forest); outline-offset:-3px;}
+
+/* ---- Sotto-scheda "Testo libero" — editor stile blocco note ---- */
+.richtext-toolbar{
+  display:flex; flex-wrap:wrap; gap:4px; align-items:center; margin-bottom:10px;
+  padding:6px; background:var(--card); border:1px solid var(--line); border-radius:8px;
+}
+.richtext-btn{
+  min-width:28px; height:28px; padding:0 8px; border:1px solid var(--line); border-radius:6px;
+  background:var(--paper-2); color:var(--ink); font-size:13px; cursor:pointer;
+}
+.richtext-btn:hover{border-color:var(--forest);}
+.richtext-btn.bold{font-weight:700;}
+.richtext-btn.italic{font-style:italic;}
+.richtext-btn.underline{text-decoration:underline;}
+.richtext-select{
+  height:28px; border:1px solid var(--line); border-radius:6px; background:var(--paper-2);
+  color:var(--ink); font-size:12.5px; padding:0 4px; max-width:130px;
+}
+.richtext-color{width:28px; height:28px; padding:2px; border:1px solid var(--line); border-radius:6px; background:var(--paper-2); cursor:pointer;}
+.richtext-editor{
+  min-height:220px; padding:14px 16px; border:1px solid var(--line); border-radius:10px;
+  background:var(--card); color:var(--ink); font-size:14px; line-height:1.55; overflow-wrap:anywhere;
+}
+.richtext-editor:focus{outline:none; border-color:var(--forest);}
+.richtext-editor table{border-collapse:collapse; margin:8px 0;}
+.richtext-editor td, .richtext-editor th{border:1px solid var(--line); padding:5px 7px; min-width:36px;}
+.richtext-editor ul{padding-left:22px; margin:6px 0;}
 
 .empty-hint{color:var(--ink-soft); font-size:13px; font-style:italic; padding:12px 0;}
 
@@ -5544,6 +5577,7 @@ function renderCollection(main, opts){
     openNewSubItemModal(namePrompt, (name, templateType)=>{
       const item = { id:"c"+Date.now(), name, created:new Date().toLocaleDateString("it-IT"), type:templateType };
       if(templateType==="table") Object.assign(item, newTableTemplateData());
+      else if(templateType==="text") Object.assign(item, newTextTemplateData());
       else item.data = template();
       state[key].push(item);
       saveList();
@@ -5593,6 +5627,8 @@ function renderCollection(main, opts){
   } else {
     if(current.type==="table"){
       renderGenericTable(detail, current, (quiet)=>{ store.set(key, state[key]); if(!quiet) render(opts.tab); });
+    } else if(current.type==="text"){
+      renderFreeTextEditor(detail, current, (quiet)=>{ store.set(key, state[key]); if(!quiet) render(opts.tab); });
     } else {
       opts.renderDetail(detail, current);
     }
@@ -5600,10 +5636,13 @@ function renderCollection(main, opts){
   wrap.appendChild(detail);
   main.appendChild(wrap);
 }
-// Modale scelta template per una nuova sotto-scheda: Checklist (categorie/voci) o Tabella
-// (righe/colonne libere, come quella storica di Gomme). In futuro si potranno aggiungere altri template.
+// Modale scelta template per una nuova sotto-scheda: Checklist (categorie/voci), Tabella
+// (righe/colonne libere, come quella storica di Gomme) o Testo libero (editor stile blocco note).
 function newTableTemplateData(){
   return { columns: [{id:"col"+Date.now(), label:"Colonna 1", width:200}], rows: [] };
+}
+function newTextTemplateData(){
+  return { html: "" };
 }
 function openNewSubItemModal(namePromptLabel, onCreate){
   openModal((modal, close)=>{
@@ -5616,12 +5655,14 @@ function openNewSubItemModal(namePromptLabel, onCreate){
     const tabsWrap = el("div",{class:"modal-tabs"});
     const checklistBtn = el("div",{class:"modal-tab-btn active"},"Checklist");
     const tableBtn = el("div",{class:"modal-tab-btn"},"Tabella");
-    checklistBtn.addEventListener("click", ()=>{ selected="checklist"; checklistBtn.classList.add("active"); tableBtn.classList.remove("active"); });
-    tableBtn.addEventListener("click", ()=>{ selected="table"; tableBtn.classList.add("active"); checklistBtn.classList.remove("active"); });
-    tabsWrap.appendChild(checklistBtn); tabsWrap.appendChild(tableBtn);
+    const textBtn = el("div",{class:"modal-tab-btn"},"Testo libero");
+    checklistBtn.addEventListener("click", ()=>{ selected="checklist"; checklistBtn.classList.add("active"); tableBtn.classList.remove("active"); textBtn.classList.remove("active"); });
+    tableBtn.addEventListener("click", ()=>{ selected="table"; tableBtn.classList.add("active"); checklistBtn.classList.remove("active"); textBtn.classList.remove("active"); });
+    textBtn.addEventListener("click", ()=>{ selected="text"; textBtn.classList.add("active"); checklistBtn.classList.remove("active"); tableBtn.classList.remove("active"); });
+    tabsWrap.appendChild(checklistBtn); tabsWrap.appendChild(tableBtn); tabsWrap.appendChild(textBtn);
     modal.appendChild(tabsWrap);
     modal.appendChild(el("div",{style:"font-size:11.5px; color:var(--ink-soft); margin-top:6px;"},
-      "Checklist: categorie e voci da spuntare. Tabella: righe e colonne libere, come quella di Gomme."));
+      "Checklist: categorie e voci da spuntare. Tabella: righe e colonne libere, come quella di Gomme. Testo libero: un editor stile blocco note, con formattazione di base."));
     const actions = el("div",{class:"modal-actions"});
     const cancelBtn = el("button",{class:"btn ghost"},"Annulla");
     cancelBtn.addEventListener("click", close);
@@ -5708,10 +5749,15 @@ function renderGenericTable(container, item, onSave){
   item.columns.forEach((col,ci)=>{
     const cell = el("div",{class:"gen-cell", style:`flex:0 0 ${col.width||160}px; width:${col.width||160}px;`});
     cellEls[col.id] = cell;
+    const headInner = el("div",{class:"gen-col-head-row"});
+    const colGrip = el("span",{class:"gen-col-grip", html:ICON_GRIP, title:"Trascina per spostare la colonna"});
+    headInner.appendChild(colGrip);
     const labelInput = el("input",{type:"text", value:col.label,
-      style:"width:100%; border:none; background:transparent; font-family:'Fraunces',serif; font-size:13px; color:var(--forest); font-weight:600; padding:0;"});
+      style:"flex:1; min-width:0; border:none; background:transparent; font-family:'Fraunces',serif; font-size:13px; color:var(--forest); font-weight:600; padding:0;"});
     labelInput.addEventListener("change", ()=>{ col.label = labelInput.value; onSave(true); });
-    cell.appendChild(labelInput);
+    headInner.appendChild(labelInput);
+    cell.appendChild(headInner);
+    attachRowDrag(colGrip, cell, ci, item.columns, ()=>onSave());
     if(item.columns.length>1){
       const delColBtn = el("span",{class:"del", html:"✕", title:"Elimina colonna",
         style:"cursor:pointer;opacity:.5;font-size:11px; position:absolute; top:8px; right:14px;"});
@@ -5799,6 +5845,122 @@ function renderGenericTable(container, item, onSave){
   });
   wrap.appendChild(table);
   container.appendChild(wrap);
+}
+
+// Rimuove tag/attributi potenzialmente pericolosi (script, gestori "on*", link "javascript:")
+// dall'HTML prodotto dall'editor di Testo libero prima di salvarlo o rimostrarlo, dato che
+// il contenuto è condiviso tra i due utenti dell'app.
+function sanitizeRichHtml(html){
+  const tpl = document.createElement("template");
+  tpl.innerHTML = html || "";
+  const BLOCKED_TAGS = new Set(["script","style","iframe","object","embed","link","meta","base","form"]);
+  (function walk(node){
+    [...node.children].forEach(child=>{
+      if(BLOCKED_TAGS.has(child.tagName.toLowerCase())){ child.remove(); return; }
+      [...child.attributes].forEach(attr=>{
+        const name = attr.name.toLowerCase();
+        const isUrlAttr = name==="href" || name==="src";
+        if(name.startsWith("on") || (isUrlAttr && /^\s*javascript:/i.test(attr.value))){
+          child.removeAttribute(attr.name);
+        }
+      });
+      walk(child);
+    });
+  })(tpl.content);
+  return tpl.innerHTML;
+}
+// Sotto-scheda "Testo libero": editor stile blocco note (contenteditable) con una barra di
+// comandi basilari. Usa document.execCommand: è un'API deprecata ma ancora supportata da tutti
+// i browser desktop/mobile rilevanti e resta la via più semplice per un editor WYSIWYG minimale
+// senza aggiungere una libreria esterna.
+function renderFreeTextEditor(container, item, onSave){
+  if(item.html==null) item.html = "";
+  const toolbar = el("div",{class:"richtext-toolbar"});
+  const editor = el("div",{class:"richtext-editor", contenteditable:"true", html: sanitizeRichHtml(item.html)});
+
+  // Le select e l'input colore rubano il focus (e con esso la selezione di testo) all'editor
+  // non appena l'utente ci clicca sopra: qui teniamo traccia dell'ultima selezione fatta
+  // dentro l'editor, così possiamo ripristinarla subito prima di applicare il comando.
+  let savedRange = null;
+  document.addEventListener("selectionchange", function trackSel(){
+    if(!document.body.contains(editor)){ document.removeEventListener("selectionchange", trackSel); return; }
+    const sel = window.getSelection();
+    if(sel.rangeCount && editor.contains(sel.anchorNode)) savedRange = sel.getRangeAt(0).cloneRange();
+  });
+  function restoreSelection(){
+    if(!savedRange) return;
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedRange);
+  }
+  function afterCmd(){
+    item.html = sanitizeRichHtml(editor.innerHTML);
+    onSave(true);
+  }
+
+  function cmdBtn(label, title, cls, cmd, value){
+    const btn = el("button",{type:"button", class:"richtext-btn"+(cls?" "+cls:""), title:title||label}, label);
+    btn.addEventListener("mousedown", (e)=>{ e.preventDefault(); });
+    btn.addEventListener("click", ()=>{ document.execCommand(cmd, false, value); afterCmd(); });
+    return btn;
+  }
+  toolbar.appendChild(cmdBtn("G","Grassetto","bold","bold"));
+  toolbar.appendChild(cmdBtn("C","Corsivo","italic","italic"));
+  toolbar.appendChild(cmdBtn("S","Sottolineato","underline","underline"));
+
+  const fontSel = el("select",{class:"richtext-select", title:"Carattere"});
+  [["","Carattere"],["Inter, sans-serif","Inter"],["'Fraunces', serif","Fraunces"],
+   ["Arial, sans-serif","Arial"],["Georgia, serif","Georgia"],["'Courier New', monospace","Monospace"]]
+    .forEach(([val,label])=> fontSel.appendChild(el("option",{value:val}, label)));
+  fontSel.addEventListener("change", ()=>{
+    if(fontSel.value){ restoreSelection(); editor.focus(); document.execCommand("fontName", false, fontSel.value); afterCmd(); }
+    fontSel.value = "";
+  });
+  toolbar.appendChild(fontSel);
+
+  const sizeSel = el("select",{class:"richtext-select", title:"Dimensione testo"});
+  [["","Dimensione"],["2","Piccolo"],["3","Normale"],["5","Grande"],["7","Enorme"]]
+    .forEach(([val,label])=> sizeSel.appendChild(el("option",{value:val}, label)));
+  sizeSel.addEventListener("change", ()=>{
+    if(sizeSel.value){ restoreSelection(); editor.focus(); document.execCommand("fontSize", false, sizeSel.value); afterCmd(); }
+    sizeSel.value = "";
+  });
+  toolbar.appendChild(sizeSel);
+
+  const colorInput = el("input",{type:"color", class:"richtext-color", title:"Colore testo", value:"#12312f"});
+  colorInput.addEventListener("change", ()=>{
+    restoreSelection(); editor.focus();
+    document.execCommand("foreColor", false, colorInput.value);
+    afterCmd();
+  });
+  toolbar.appendChild(colorInput);
+
+  toolbar.appendChild(cmdBtn("•", "Elenco puntato", "", "insertUnorderedList"));
+
+  const tableBtn = el("button",{type:"button", class:"richtext-btn", title:"Inserisci tabella"}, "▦");
+  tableBtn.addEventListener("mousedown", (e)=>{ e.preventDefault(); });
+  tableBtn.addEventListener("click", ()=>{
+    const input = prompt("Dimensioni tabella (righe x colonne):", "3x3");
+    if(!input) return;
+    const m = input.match(/(\d+)\s*[x×]\s*(\d+)/i);
+    const rows = m ? Math.max(1, Math.min(20, parseInt(m[1],10))) : 3;
+    const cols = m ? Math.max(1, Math.min(10, parseInt(m[2],10))) : 3;
+    let html = '<table>';
+    for(let r=0;r<rows;r++){
+      html += "<tr>";
+      for(let c=0;c<cols;c++) html += "<td>&nbsp;</td>";
+      html += "</tr>";
+    }
+    html += "</table><p><br></p>";
+    restoreSelection(); editor.focus();
+    document.execCommand("insertHTML", false, html);
+    afterCmd();
+  });
+  toolbar.appendChild(tableBtn);
+
+  container.appendChild(toolbar);
+  editor.addEventListener("blur", afterCmd);
+  container.appendChild(editor);
 }
 
 function renderPackItem(item, i, arr, onSave, idPrefix){
@@ -6680,10 +6842,14 @@ function renderBbqDetail(detail, bbq){
 // La scheda Manutenzione è una collezione di sotto schede (state.maintenanceItems), con lo
 // stesso layout elenco+dettaglio di Viaggi/Eventi. "Gomme" è una sotto-scheda Tabella come le
 // altre (migrata dal vecchio formato fisso in migrateGommeToTable()); tutte le altre sotto
-// schede possono essere Checklist (categorie/voci) o Tabella (righe/colonne libere).
+// schede possono essere Checklist (categorie/voci), Tabella (righe/colonne libere) o Testo libero.
 function renderMaintenanceItemDetail(detail, item){
   if(item.type==="table"){
     renderGenericTable(detail, item, (quiet)=>{ store.set("maintenanceItems", state.maintenanceItems); if(!quiet) render("gomme"); });
+    return;
+  }
+  if(item.type==="text"){
+    renderFreeTextEditor(detail, item, (quiet)=>{ store.set("maintenanceItems", state.maintenanceItems); if(!quiet) render("gomme"); });
     return;
   }
   if(!item.data) item.data = [];
@@ -6708,6 +6874,7 @@ function renderGomme(main){
     openNewSubItemModal("Nome della sotto-scheda (es. Casa, Auto, Caldaia…):", (name, templateType)=>{
       const item = { id:"m"+Date.now(), name, created:new Date().toLocaleDateString("it-IT"), type:templateType };
       if(templateType==="table") Object.assign(item, newTableTemplateData());
+      else if(templateType==="text") Object.assign(item, newTextTemplateData());
       else item.data = [];
       state.maintenanceItems.push(item);
       store.set("maintenanceItems", state.maintenanceItems);

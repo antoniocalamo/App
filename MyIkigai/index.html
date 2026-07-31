@@ -562,7 +562,7 @@ textarea{resize:vertical;}
   color:var(--teal); text-decoration:none; white-space:nowrap;
 }
 .weather-link:hover{text-decoration:underline;}
-.orto-layout{display:flex; gap:14px; align-items:flex-start;}
+.orto-layout{display:flex; gap:14px; align-items:flex-start; position:relative;}
 .orto-board-wrap{flex:1; min-width:0; overflow:auto; max-height:72vh; -webkit-overflow-scrolling:touch; touch-action:none;}
 .orto-board-wrap.orto-hand-mode{cursor:grab;}
 .orto-board-wrap.orto-hand-mode.orto-panning{cursor:grabbing;}
@@ -741,8 +741,15 @@ textarea{resize:vertical;}
 .orto-comment-close:hover{opacity:1;}
 .orto-comment-pop textarea{font-size:12.5px;}
 .orto-detail-panel{
-  width:172px; flex-shrink:0; background:var(--card); border:1px solid var(--line); border-radius:12px;
-  padding:10px; box-shadow:var(--shadow); position:sticky; top:14px; max-height:calc(100vh - 28px); overflow-y:auto;
+  width:172px; background:var(--card); border:1px solid var(--line); border-radius:12px;
+  padding:10px; box-shadow:var(--shadow); position:absolute; top:14px; right:14px; z-index:20;
+  max-height:calc(72vh - 28px); overflow-y:auto;
+}
+/* su desktop il pannello è un overlay sul bordo della board (non sposta né ridimensiona la
+   board): resta "fisso" per posizione/zoom, il pannello compare solo quando c'è una pianta
+   selezionata, altrimenti sarebbe un riquadro vuoto che ruba spazio senza motivo */
+@media (min-width:881px){
+  .orto-detail-panel.orto-detail-panel-empty{ display:none; }
 }
 .orto-detail-head{display:flex; align-items:center; gap:6px; margin-bottom:9px;}
 .orto-detail-emoji{font-size:19px; line-height:1;}
@@ -1680,7 +1687,7 @@ input.cashflow-item-occ-input{
   .finance-grid{grid-template-columns:1fr; gap:14px;}
   /* Contenuti larghi: scroll orizzontale dedicato invece di schiacciare tutto */
   .orto-layout{flex-direction:column; align-items:stretch;}
-  .orto-detail-panel{width:100%;}
+  .orto-detail-panel{width:100%; position:static; max-height:calc(100vh - 28px);}
   /* Orto: controlli minuscoli pensati per mouse diventano target di tocco più grandi,
      restando ancorati allo stesso angolo così non sconfinano sugli oggetti vicini */
   .orto-zoom-btn{width:32px; height:32px; font-size:15px;}
@@ -5010,7 +5017,7 @@ function renderOrto(main){
   main.appendChild(renderOrtoCalendar());
 }
 function renderOrtoDetailPanel(obj){
-  const panel = el("div",{class:"orto-detail-panel"});
+  const panel = el("div",{class:"orto-detail-panel"+(obj ? "" : " orto-detail-panel-empty")});
   if(!obj){
     panel.appendChild(el("div",{class:"orto-detail-empty"}, [
       el("span",{class:"orto-detail-empty-icon"}, "🌱"),

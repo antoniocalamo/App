@@ -4609,6 +4609,9 @@ function renderOrto(main){
   });
   toolbar.appendChild(addCommentBtn);
 
+  const handBtn = el("button",{class:"btn "+(ortoHandMode?"primary":"ghost"), title:"Mano: trascina per spostare la vista, senza muovere gli oggetti (come in Photoshop)"}, "✋ Mano");
+  handBtn.addEventListener("click", ()=>{ ortoHandMode = !ortoHandMode; render("orto"); });
+  toolbar.appendChild(handBtn);
 
   const ZOOM_MIN = 0.2, ZOOM_MAX = 2.2, ZOOM_STEP = 0.15;
   const zoomControls = el("div",{class:"orto-zoom-controls"});
@@ -4631,10 +4634,6 @@ function renderOrto(main){
   });
   zoomControls.appendChild(zoomOutBtn); zoomControls.appendChild(zoomLabel); zoomControls.appendChild(zoomInBtn); zoomControls.appendChild(zoomResetBtn); zoomControls.appendChild(zoomFitBtn);
   toolbar.appendChild(zoomControls);
-
-  const handBtn = el("button",{class:"btn "+(ortoHandMode?"primary":"ghost"), title:"Mano: trascina per spostare la vista, senza muovere gli oggetti (come in Photoshop)"}, "✋ Mano");
-  handBtn.addEventListener("click", ()=>{ ortoHandMode = !ortoHandMode; render("orto"); });
-  toolbar.appendChild(handBtn);
 
   const activeSeasonForBtn = getActiveOrtoSeason();
   const seasonsBtn = el("button",{class:"btn ghost orto-seasons-btn"}, [

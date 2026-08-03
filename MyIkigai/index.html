@@ -1902,7 +1902,7 @@ const DEFAULTS = {
   trips: [],
   bbqs: [],
   tires: [],
-  finance: { liquidity: [], nonliquid: [], debts: [], history: [], investments: [], investAutoPriceEnabled: false, investRealizedArchive: 0, cashflow:{incomes:[], expenses:[]} },
+  finance: { liquidity: [], nonliquid: [], debts: [], history: [], investments: [], investAutoPriceEnabled: false, investRealizedArchive: {}, cashflow:{incomes:[], expenses:[]} },
   sharedBoards: [],
   projects: [],
   weatherLocation: {name:"Milano", lat:45.4642, lon:9.19}
@@ -2875,7 +2875,13 @@ async function loadAll(){
   if(!state.finance.cashflow || !state.finance.cashflow.incomes){ state.finance.cashflow = {incomes:[], expenses:[]}; }
   if(!state.finance.investments) state.finance.investments = [];
   if(state.finance.investAutoPriceEnabled===undefined) state.finance.investAutoPriceEnabled = false;
-  if(state.finance.investRealizedArchive===undefined) state.finance.investRealizedArchive = 0;
+  if(state.finance.investRealizedArchive===undefined) state.finance.investRealizedArchive = {};
+  if(typeof state.finance.investRealizedArchive==="number"){
+    // formato vecchio: un unico totale non diviso per anno, lo mettiamo sull'anno corrente
+    state.finance.investRealizedArchive = state.finance.investRealizedArchive
+      ? { [String(new Date().getFullYear())]: state.finance.investRealizedArchive }
+      : {};
+  }
   if(state.finance.investments.length){
     const merged = {};
     const order = [];
@@ -7727,11 +7733,16 @@ function investLotsTotals(inv){
     return 0;
   });
   let qty = 0, cost = 0, realized = 0;
+  const realizedByYear = {}; // anno (stringa) -> realizzato nella valuta nativa del titolo
   lots.forEach(l=>{
     if(l.type==="sell"){
       const sellQty = Math.min(l.qty||0, qty);
       const avgCost = qty ? cost/qty : 0;
-      realized += sellQty*((l.price||0)-avgCost);
+      const gain = sellQty*((l.price||0)-avgCost);
+      realized += gain;
+      const d = parseItDate(l.date);
+      const year = d ? String(d.getFullYear()) : "?";
+      realizedByYear[year] = (realizedByYear[year]||0) + gain;
       cost -= avgCost*sellQty;
       qty -= sellQty;
     } else {
@@ -7739,7 +7750,7 @@ function investLotsTotals(inv){
       qty += (l.qty||0);
     }
   });
-  return { qty, cost, avgBuyPrice: qty ? cost/qty : 0, realized };
+  return { qty, cost, avgBuyPrice: qty ? cost/qty : 0, realized, realizedByYear };
 }
 function addOrMergeInvestment(meta, qty, price, date, type){
   if(!state.finance.investments) state.finance.investments = [];
@@ -8082,8 +8093,12 @@ function openRealizedAdjustmentModal(){
   openModal((modal, close)=>{
     modal.appendChild(el("h3",{},"Rettifica P&L realizzato storico"));
     modal.appendChild(el("div",{style:"font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;"},
-      "Aggiunge (o toglie, con il segno meno) un importo al totale storico del P&L realizzato — utile per allineare il totale a quello di un altro broker senza reinserire ogni singolo ordine."));
-    modal.appendChild(el("div",{class:"field-label"},"Importo in € (es. 2001,54 oppure -150)"));
+      "Aggiunge (o toglie, con il segno meno) un importo al totale storico del P&L realizzato di un anno — utile per allineare il totale a quello di un altro broker senza reinserire ogni singolo ordine."));
+    modal.appendChild(el("div",{class:"field-label"},"Anno di riferimento"));
+    const yearInp = el("input",{type:"text", placeholder:String(new Date().getFullYear())});
+    yearInp.value = String(new Date().getFullYear());
+    modal.appendChild(yearInp);
+    modal.appendChild(el("div",{class:"field-label", style:"margin-top:12px;"},"Importo in € (es. 2001,54 oppure -150)"));
     const amountInp = el("input",{type:"text", placeholder:"es. 2001,54"});
     modal.appendChild(amountInp);
     const errBox = el("div",{style:"color:var(--rust); font-size:12px; margin-top:8px; min-height:16px;"});
@@ -8094,8 +8109,12 @@ function openRealizedAdjustmentModal(){
     const saveBtn = el("button",{class:"btn primary"},"Aggiungi");
     saveBtn.addEventListener("click", ()=>{
       const amount = parseItalianNumber(amountInp.value);
+      const year = parseInt(yearInp.value,10);
       if(!amount){ errBox.textContent = "Inserisci un importo valido (diverso da zero)."; return; }
-      state.finance.investRealizedArchive = (state.finance.investRealizedArchive||0) + amount;
+      if(!year || year<1990 || year>2100){ errBox.textContent = "Inserisci un anno valido (es. 2026)."; return; }
+      if(!state.finance.investRealizedArchive) state.finance.investRealizedArchive = {};
+      const key = String(year);
+      state.finance.investRealizedArchive[key] = (state.finance.investRealizedArchive[key]||0) + amount;
       store.set(privKey("finance"), state.finance);
       close(); render("finanze");
     });
@@ -8105,11 +8124,12 @@ function openRealizedAdjustmentModal(){
 }
 
 let investOrdersWindow = "month";
+let investRealizedYearFilter = "all";
 function renderFinanzeInvestimenti(main){
   const invs = state.finance.investments || [];
 
   const rows = invs.map(inv=>{
-    const {qty, cost, avgBuyPrice, realized} = investLotsTotals(inv);
+    const {qty, cost, avgBuyPrice, realized, realizedByYear} = investLotsTotals(inv);
     const isEUR = !inv.currency || inv.currency==="EUR";
     const fx = inv.fxRate!=null ? inv.fxRate : (isEUR?1:null);
     const priceKnown = inv.lastPrice!=null;
@@ -8118,20 +8138,28 @@ function renderFinanzeInvestimenti(main){
     // il P&L realizzato converte in € al tasso di cambio più recente disponibile (come il resto
     // della riga), non a quello storico del giorno della vendita: non lo teniamo in memoria
     const realizedEUR = fx!=null ? realized*fx : null;
+    const realizedByYearEUR = {};
     if(fx!=null){
+      Object.keys(realizedByYear).forEach(y=>{ realizedByYearEUR[y] = realizedByYear[y]*fx; });
       valueEUR = qty*priceNative*fx;
       costEUR = cost*fx; // conversione al tasso di cambio più recente, non a quello storico d'acquisto
     }
-    return { inv, qty, cost, avgBuyPrice, isEUR, fx, priceNative, priceKnown, valueEUR, costEUR, realized, realizedEUR };
+    return { inv, qty, cost, avgBuyPrice, isEUR, fx, priceNative, priceKnown, valueEUR, costEUR, realized, realizedEUR, realizedByYearEUR };
   });
 
-  let totalEUR = 0, totalCostEUR = 0, totalRealizedEUR = state.finance.investRealizedArchive||0;
+  let totalEUR = 0, totalCostEUR = 0;
+  const totalRealizedByYear = {};
+  Object.entries(state.finance.investRealizedArchive||{}).forEach(([y,v])=>{ totalRealizedByYear[y] = (totalRealizedByYear[y]||0) + v; });
   const otherCurrencies = new Set();
   rows.forEach(r=>{
     if(r.valueEUR!=null){ totalEUR += r.valueEUR; totalCostEUR += r.costEUR; }
-    if(r.realizedEUR!=null) totalRealizedEUR += r.realizedEUR;
+    Object.entries(r.realizedByYearEUR).forEach(([y,v])=>{ totalRealizedByYear[y] = (totalRealizedByYear[y]||0) + v; });
     if(!r.isEUR) otherCurrencies.add(r.inv.currency);
   });
+  const realizedYears = Object.keys(totalRealizedByYear).sort((a,b)=>b.localeCompare(a));
+  const totalRealizedEUR = investRealizedYearFilter==="all"
+    ? Object.values(totalRealizedByYear).reduce((s,v)=>s+v,0)
+    : (totalRealizedByYear[investRealizedYearFilter]||0);
   const totalPnl = totalEUR-totalCostEUR;
   const totalPnlPct = totalCostEUR ? (totalPnl/totalCostEUR*100) : null;
 
@@ -8148,8 +8176,18 @@ function renderFinanzeInvestimenti(main){
     )
   ]));
   {
+    const labelRow = el("div",{style:"display:flex; align-items:center; gap:8px;"});
+    labelRow.appendChild(el("span",{class:"finance-total-label"}, investRealizedYearFilter==="all" ? "P&L realizzato (storico)" : "P&L realizzato ("+investRealizedYearFilter+")"));
+    if(realizedYears.length){
+      const yearSel = el("select",{class:"theme-select", style:"font-size:10.5px; padding:2px 5px;"});
+      yearSel.appendChild(el("option",{value:"all"},"Tutti"));
+      realizedYears.forEach(y=> yearSel.appendChild(el("option",{value:y}, y==="?" ? "Data ignota" : y)));
+      yearSel.value = investRealizedYearFilter;
+      yearSel.addEventListener("change", ()=>{ investRealizedYearFilter = yearSel.value; render("finanze"); });
+      labelRow.appendChild(yearSel);
+    }
     const realizedBlock = el("div",{},[
-      el("span",{class:"finance-total-label"},"P&L realizzato (storico)"),
+      labelRow,
       el("div",{class:"invest-pnl "+(totalRealizedEUR>=0?"positive":"negative"), style:"font-size:16px;"},
         (totalRealizedEUR>=0?"+":"")+fmtEUR(totalRealizedEUR)
       )
@@ -8198,10 +8236,13 @@ function renderFinanzeInvestimenti(main){
       const updText = isStale ? "mai aggiornato — prezzo di carico" : "prezzo agg. il "+new Date(inv.lastPriceAt).toLocaleDateString("it-IT",{day:"2-digit",month:"2-digit",year:"2-digit"});
       mainCol.appendChild(el("span",{class:"invest-updated"+(isStale?" stale":"")}, updText));
     }
-    if(r.realizedEUR){
-      mainCol.appendChild(el("span",{class:"invest-pnl "+(r.realizedEUR>=0?"positive":"negative"), style:"font-size:10.5px; text-align:left; margin-top:1px;"},
-        "Realizzato: "+(r.realizedEUR>=0?"+":"")+fmtEUR(r.realizedEUR)
-      ));
+    {
+      const rowRealized = investRealizedYearFilter==="all" ? r.realizedEUR : (r.realizedByYearEUR[investRealizedYearFilter]||null);
+      if(rowRealized){
+        mainCol.appendChild(el("span",{class:"invest-pnl "+(rowRealized>=0?"positive":"negative"), style:"font-size:10.5px; text-align:left; margin-top:1px;"},
+          "Realizzato"+(investRealizedYearFilter==="all"?"":" "+investRealizedYearFilter)+": "+(rowRealized>=0?"+":"")+fmtEUR(rowRealized)
+        ));
+      }
     }
     row.appendChild(mainCol);
     row.appendChild(el("div",{class:"invest-qty"},
@@ -8223,9 +8264,14 @@ function renderFinanzeInvestimenti(main){
     rowActions.appendChild(priceBtn);
     const del = el("span",{class:"del", html:"✕"});
     del.addEventListener("click", ()=>{
-      const archiveNote = r.realizedEUR ? " Il P&L realizzato ("+(r.realizedEUR>=0?"+":"")+fmtEUR(r.realizedEUR)+") resterà conteggiato nel totale storico." : "";
+      const archiveNote = r.realizedEUR ? " Il P&L realizzato ("+(r.realizedEUR>=0?"+":"")+fmtEUR(r.realizedEUR)+") resterà conteggiato nel totale storico, diviso per anno." : "";
       if(confirm("Rimuovere "+inv.symbol+" (tutti gli ordini) dal portafoglio?"+archiveNote)){
-        if(r.realizedEUR) state.finance.investRealizedArchive = (state.finance.investRealizedArchive||0) + r.realizedEUR;
+        if(Object.keys(r.realizedByYearEUR).length){
+          if(!state.finance.investRealizedArchive) state.finance.investRealizedArchive = {};
+          Object.entries(r.realizedByYearEUR).forEach(([y,v])=>{
+            state.finance.investRealizedArchive[y] = (state.finance.investRealizedArchive[y]||0) + v;
+          });
+        }
         state.finance.investments = state.finance.investments.filter(i=>i!==inv);
         store.set(privKey("finance"), state.finance); render("finanze");
       }

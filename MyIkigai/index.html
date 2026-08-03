@@ -8075,6 +8075,35 @@ async function refreshInvestmentPrices(){
   render("finanze");
 }
 
+// Rettifica una tantum del P&L realizzato storico: serve solo per importare un totale già
+// noto (es. da un altro broker) senza dover reinserire ordine per ordine. Somma un importo
+// libero all'archivio storico (lo stesso usato quando cancelli un titolo con vendite già fatte).
+function openRealizedAdjustmentModal(){
+  openModal((modal, close)=>{
+    modal.appendChild(el("h3",{},"Rettifica P&L realizzato storico"));
+    modal.appendChild(el("div",{style:"font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;"},
+      "Aggiunge (o toglie, con il segno meno) un importo al totale storico del P&L realizzato — utile per allineare il totale a quello di un altro broker senza reinserire ogni singolo ordine."));
+    modal.appendChild(el("div",{class:"field-label"},"Importo in € (es. 2001,54 oppure -150)"));
+    const amountInp = el("input",{type:"text", placeholder:"es. 2001,54"});
+    modal.appendChild(amountInp);
+    const errBox = el("div",{style:"color:var(--rust); font-size:12px; margin-top:8px; min-height:16px;"});
+    modal.appendChild(errBox);
+    const actions = el("div",{class:"modal-actions"});
+    const cancelBtn = el("button",{class:"btn ghost"},"Annulla");
+    cancelBtn.addEventListener("click", close);
+    const saveBtn = el("button",{class:"btn primary"},"Aggiungi");
+    saveBtn.addEventListener("click", ()=>{
+      const amount = parseItalianNumber(amountInp.value);
+      if(!amount){ errBox.textContent = "Inserisci un importo valido (diverso da zero)."; return; }
+      state.finance.investRealizedArchive = (state.finance.investRealizedArchive||0) + amount;
+      store.set(privKey("finance"), state.finance);
+      close(); render("finanze");
+    });
+    actions.appendChild(cancelBtn); actions.appendChild(saveBtn);
+    modal.appendChild(actions);
+  });
+}
+
 let investOrdersWindow = "month";
 function renderFinanzeInvestimenti(main){
   const invs = state.finance.investments || [];
@@ -8118,12 +8147,18 @@ function renderFinanzeInvestimenti(main){
       (totalPnl>=0?"+":"")+fmtEUR(totalPnl)+(totalPnlPct!=null?" ("+(totalPnlPct>=0?"+":"")+totalPnlPct.toFixed(1)+"%)":"")
     )
   ]));
-  totalsBar.appendChild(el("div",{},[
-    el("span",{class:"finance-total-label"},"P&L realizzato (storico)"),
-    el("div",{class:"invest-pnl "+(totalRealizedEUR>=0?"positive":"negative"), style:"font-size:16px;"},
-      (totalRealizedEUR>=0?"+":"")+fmtEUR(totalRealizedEUR)
-    )
-  ]));
+  {
+    const realizedBlock = el("div",{},[
+      el("span",{class:"finance-total-label"},"P&L realizzato (storico)"),
+      el("div",{class:"invest-pnl "+(totalRealizedEUR>=0?"positive":"negative"), style:"font-size:16px;"},
+        (totalRealizedEUR>=0?"+":"")+fmtEUR(totalRealizedEUR)
+      )
+    ]);
+    const adjustLink = el("span",{class:"invest-manual-link", style:"margin:4px 0 0; display:block; font-size:11px;"}, "✎ Rettifica");
+    adjustLink.addEventListener("click", openRealizedAdjustmentModal);
+    realizedBlock.appendChild(adjustLink);
+    totalsBar.appendChild(realizedBlock);
+  }
   main.appendChild(totalsBar);
   if(otherCurrencies.size){
     main.appendChild(el("div",{class:"finance-note"},

@@ -7995,6 +7995,52 @@ function openEditHoldingModal(inv){
     renderLots();
     modal.appendChild(lotsWrap);
 
+    modal.appendChild(el("div",{class:"field-label", style:"margin-top:16px;"},"Rettifica manuale P&L realizzato (per anno, in €)"));
+    modal.appendChild(el("div",{style:"font-size:11px;color:var(--ink-soft);margin-bottom:6px;"},
+      "Per registrare un capital gain/perdita già noto (es. da un altro broker) senza dover reinserire acquisti e vendite."));
+    const adjWrap = el("div",{class:"invest-edit-lots"});
+    function renderAdjustments(){
+      adjWrap.innerHTML = "";
+      const entries = Object.entries(inv.manualRealized||{}).sort((a,b)=> b[0].localeCompare(a[0]));
+      if(!entries.length){
+        adjWrap.appendChild(el("div",{class:"empty-hint"},"Nessuna rettifica."));
+        return;
+      }
+      entries.forEach(([year,amount])=>{
+        const row = el("div",{class:"invest-edit-lot-row"});
+        row.appendChild(el("span",{class:"invest-edit-lot-input"}, year));
+        row.appendChild(el("span",{class:"invest-edit-lot-input", style:"color:"+(amount>=0?"#2F7A3D":"#B3352A")+";"}, (amount>=0?"+":"")+fmtEUR(amount)));
+        const del = el("span",{class:"del", html:"✕"});
+        del.addEventListener("click", ()=>{
+          delete inv.manualRealized[year];
+          store.set(privKey("finance"), state.finance);
+          renderAdjustments();
+        });
+        row.appendChild(del);
+        adjWrap.appendChild(row);
+      });
+    }
+    renderAdjustments();
+    modal.appendChild(adjWrap);
+    const addAdjRow = el("div",{style:"display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;"});
+    const adjYearInp = el("input",{type:"text", placeholder:"anno", style:"width:80px;"});
+    adjYearInp.value = String(new Date().getFullYear());
+    const adjAmountInp = el("input",{type:"text", placeholder:"importo € (es. 2001,54)"});
+    const adjAddBtn = el("button",{class:"btn ghost small"},"+ Aggiungi rettifica");
+    adjAddBtn.addEventListener("click", ()=>{
+      const year = parseInt(adjYearInp.value,10);
+      const amount = parseItalianNumber(adjAmountInp.value);
+      if(!year || year<1990 || year>2100 || !amount) return;
+      if(!inv.manualRealized) inv.manualRealized = {};
+      const key = String(year);
+      inv.manualRealized[key] = (inv.manualRealized[key]||0) + amount;
+      store.set(privKey("finance"), state.finance);
+      adjAmountInp.value = "";
+      renderAdjustments();
+    });
+    addAdjRow.appendChild(adjYearInp); addAdjRow.appendChild(adjAmountInp); addAdjRow.appendChild(adjAddBtn);
+    modal.appendChild(addAdjRow);
+
     const actions = el("div",{class:"modal-actions"});
     const closeBtn = el("button",{class:"btn primary"},"Fatto");
     closeBtn.addEventListener("click", ()=>{ close(); render("finanze"); });
@@ -8086,43 +8132,6 @@ async function refreshInvestmentPrices(){
   render("finanze");
 }
 
-// Rettifica una tantum del P&L realizzato storico: serve solo per importare un totale già
-// noto (es. da un altro broker) senza dover reinserire ordine per ordine. Somma un importo
-// libero all'archivio storico (lo stesso usato quando cancelli un titolo con vendite già fatte).
-function openRealizedAdjustmentModal(){
-  openModal((modal, close)=>{
-    modal.appendChild(el("h3",{},"Rettifica P&L realizzato storico"));
-    modal.appendChild(el("div",{style:"font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;"},
-      "Aggiunge (o toglie, con il segno meno) un importo al totale storico del P&L realizzato di un anno — utile per allineare il totale a quello di un altro broker senza reinserire ogni singolo ordine."));
-    modal.appendChild(el("div",{class:"field-label"},"Anno di riferimento"));
-    const yearInp = el("input",{type:"text", placeholder:String(new Date().getFullYear())});
-    yearInp.value = String(new Date().getFullYear());
-    modal.appendChild(yearInp);
-    modal.appendChild(el("div",{class:"field-label", style:"margin-top:12px;"},"Importo in € (es. 2001,54 oppure -150)"));
-    const amountInp = el("input",{type:"text", placeholder:"es. 2001,54"});
-    modal.appendChild(amountInp);
-    const errBox = el("div",{style:"color:var(--rust); font-size:12px; margin-top:8px; min-height:16px;"});
-    modal.appendChild(errBox);
-    const actions = el("div",{class:"modal-actions"});
-    const cancelBtn = el("button",{class:"btn ghost"},"Annulla");
-    cancelBtn.addEventListener("click", close);
-    const saveBtn = el("button",{class:"btn primary"},"Aggiungi");
-    saveBtn.addEventListener("click", ()=>{
-      const amount = parseItalianNumber(amountInp.value);
-      const year = parseInt(yearInp.value,10);
-      if(!amount){ errBox.textContent = "Inserisci un importo valido (diverso da zero)."; return; }
-      if(!year || year<1990 || year>2100){ errBox.textContent = "Inserisci un anno valido (es. 2026)."; return; }
-      if(!state.finance.investRealizedArchive) state.finance.investRealizedArchive = {};
-      const key = String(year);
-      state.finance.investRealizedArchive[key] = (state.finance.investRealizedArchive[key]||0) + amount;
-      store.set(privKey("finance"), state.finance);
-      close(); render("finanze");
-    });
-    actions.appendChild(cancelBtn); actions.appendChild(saveBtn);
-    modal.appendChild(actions);
-  });
-}
-
 let investOrdersWindow = "month";
 let investRealizedYearFilter = "all";
 function renderFinanzeInvestimenti(main){
@@ -8144,7 +8153,12 @@ function renderFinanzeInvestimenti(main){
       valueEUR = qty*priceNative*fx;
       costEUR = cost*fx; // conversione al tasso di cambio più recente, non a quello storico d'acquisto
     }
-    return { inv, qty, cost, avgBuyPrice, isEUR, fx, priceNative, priceKnown, valueEUR, costEUR, realized, realizedEUR, realizedByYearEUR };
+    // rettifiche manuali per titolo/anno (già in €, non serve conversione cambio)
+    const manualRealized = inv.manualRealized || {};
+    Object.entries(manualRealized).forEach(([y,v])=>{ realizedByYearEUR[y] = (realizedByYearEUR[y]||0) + v; });
+    const manualRealizedTotal = Object.values(manualRealized).reduce((s,v)=>s+v,0);
+    const combinedRealizedEUR = (realizedEUR||0) + manualRealizedTotal;
+    return { inv, qty, cost, avgBuyPrice, isEUR, fx, priceNative, priceKnown, valueEUR, costEUR, realized, realizedEUR, realizedByYearEUR, combinedRealizedEUR };
   });
 
   let totalEUR = 0, totalCostEUR = 0;
@@ -8192,9 +8206,6 @@ function renderFinanzeInvestimenti(main){
         (totalRealizedEUR>=0?"+":"")+fmtEUR(totalRealizedEUR)
       )
     ]);
-    const adjustLink = el("span",{class:"invest-manual-link", style:"margin:4px 0 0; display:block; font-size:11px;"}, "✎ Rettifica");
-    adjustLink.addEventListener("click", openRealizedAdjustmentModal);
-    realizedBlock.appendChild(adjustLink);
     totalsBar.appendChild(realizedBlock);
   }
   main.appendChild(totalsBar);
@@ -8237,7 +8248,7 @@ function renderFinanzeInvestimenti(main){
       mainCol.appendChild(el("span",{class:"invest-updated"+(isStale?" stale":"")}, updText));
     }
     {
-      const rowRealized = investRealizedYearFilter==="all" ? r.realizedEUR : (r.realizedByYearEUR[investRealizedYearFilter]||null);
+      const rowRealized = investRealizedYearFilter==="all" ? r.combinedRealizedEUR : (r.realizedByYearEUR[investRealizedYearFilter]||null);
       if(rowRealized){
         mainCol.appendChild(el("span",{class:"invest-pnl "+(rowRealized>=0?"positive":"negative"), style:"font-size:10.5px; text-align:left; margin-top:1px;"},
           "Realizzato"+(investRealizedYearFilter==="all"?"":" "+investRealizedYearFilter)+": "+(rowRealized>=0?"+":"")+fmtEUR(rowRealized)
@@ -8264,7 +8275,7 @@ function renderFinanzeInvestimenti(main){
     rowActions.appendChild(priceBtn);
     const del = el("span",{class:"del", html:"✕"});
     del.addEventListener("click", ()=>{
-      const archiveNote = r.realizedEUR ? " Il P&L realizzato ("+(r.realizedEUR>=0?"+":"")+fmtEUR(r.realizedEUR)+") resterà conteggiato nel totale storico, diviso per anno." : "";
+      const archiveNote = r.combinedRealizedEUR ? " Il P&L realizzato ("+(r.combinedRealizedEUR>=0?"+":"")+fmtEUR(r.combinedRealizedEUR)+") resterà conteggiato nel totale storico, diviso per anno." : "";
       if(confirm("Rimuovere "+inv.symbol+" (tutti gli ordini) dal portafoglio?"+archiveNote)){
         if(Object.keys(r.realizedByYearEUR).length){
           if(!state.finance.investRealizedArchive) state.finance.investRealizedArchive = {};

@@ -799,6 +799,10 @@ textarea{resize:vertical;}
 .coll-item-rename:hover{opacity:1;}
 .coll-item.active .coll-item-rename{color:#fff;}
 .coll-item.active{background:var(--forest); color:#fff; border-color:var(--forest);}
+.coll-item-completed{opacity:.6;}
+.coll-item-completed .coll-item-name{text-decoration:line-through;}
+.coll-item-completed.active{opacity:1;}
+.coll-list-group-label{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft); margin:4px 0 -2px 2px;}
 .coll-detail{flex:1; min-width:0;}
 .cat-block{margin-bottom:12px;}
 .cat-block h4{margin:0 0 8px 0; font-size:14px; color:var(--forest); font-family:'Fraunces',serif;}
@@ -3254,6 +3258,22 @@ function openSubItemEditModal(item, opts){
       sharedRadio.addEventListener("change", ()=>{ if(sharedRadio.checked) opts.onVisibilityChange(false); });
       privateRadio.addEventListener("change", ()=>{ if(privateRadio.checked) opts.onVisibilityChange(true); });
     }
+    if(opts.allowComplete){
+      modal.appendChild(el("div",{class:"field-label", style:"margin-top:10px;"},"Stato"));
+      const statusWrap = el("div",{class:"modal-radio-row"});
+      const inProgressLabel = el("label",{});
+      const inProgressRadio = el("input",{type:"radio", name:"itemcompleted"});
+      inProgressRadio.checked = !opts.currentCompleted;
+      inProgressLabel.appendChild(inProgressRadio); inProgressLabel.appendChild(document.createTextNode("In corso"));
+      const completedLabel = el("label",{});
+      const completedRadio = el("input",{type:"radio", name:"itemcompleted"});
+      completedRadio.checked = !!opts.currentCompleted;
+      completedLabel.appendChild(completedRadio); completedLabel.appendChild(document.createTextNode("Completato"));
+      statusWrap.appendChild(inProgressLabel); statusWrap.appendChild(completedLabel);
+      modal.appendChild(statusWrap);
+      inProgressRadio.addEventListener("change", ()=>{ if(inProgressRadio.checked) opts.onCompleteChange(false); });
+      completedRadio.addEventListener("change", ()=>{ if(completedRadio.checked) opts.onCompleteChange(true); });
+    }
     const actions = el("div",{class:"modal-actions"});
     const delBtn = el("button",{class:"btn danger small", style:"margin-right:auto;"}, opts.delBtnLabel || "Elimina sotto-scheda");
     delBtn.addEventListener("click", ()=>{
@@ -5597,8 +5617,8 @@ function renderCollection(main, opts){
     });
   });
   list.appendChild(newBtn);
-  state[key].forEach((c,ci)=>{
-    const it = el("div",{class:"coll-item"+(active===c.id?" active":"")});
+  const buildItem = (c,ci)=>{
+    const it = el("div",{class:"coll-item"+(active===c.id?" active":"")+(opts.groupCompleted && c.completed?" coll-item-completed":"")});
     const cHex = colorForIndex(c.color);
     if(cHex){ it.style.background = active===c.id ? cHex : ""; it.style.borderColor = cHex; }
     const nameRow = el("div",{class:"coll-item-name-row"});
@@ -5614,9 +5634,12 @@ function renderCollection(main, opts){
         delBtnLabel: delBtnLabel,
         allowPrivate: opts.allowPrivate,
         currentPrivate: !!c.private,
+        allowComplete: opts.groupCompleted,
+        currentCompleted: !!c.completed,
         onRename:(name)=>{ c.name=name; saveList(); render(opts.tab); },
         onColorChange:(idx)=>{ c.color=(idx==null?undefined:idx); saveList(); render(opts.tab); },
         onVisibilityChange:(isPrivate)=>{ c.private = isPrivate || undefined; saveList(); render(opts.tab); },
+        onCompleteChange:(isCompleted)=>{ c.completed = isCompleted || undefined; saveList(); render(opts.tab); },
         onDelete:()=>{
           state[key] = state[key].filter(x=>x.id!==c.id);
           saveList(); setActive(null); render(opts.tab);
@@ -5628,8 +5651,20 @@ function renderCollection(main, opts){
     it.appendChild(el("div",{style:"font-weight:400;font-size:11px;opacity:.75;margin-top:2px;"}, c.created));
     it.addEventListener("click", ()=>{ setActive(c.id); render(opts.tab); });
     attachRowDrag(grip, it, ci, state[key], ()=>{ saveList(); render(opts.tab); });
-    list.appendChild(it);
-  });
+    return it;
+  };
+  if(opts.groupCompleted){
+    const inProgress = [], completed = [];
+    state[key].forEach((c,ci)=>{ (c.completed ? completed : inProgress).push([c,ci]); });
+    if(inProgress.length && completed.length) list.appendChild(el("div",{class:"coll-list-group-label"},"In corso"));
+    inProgress.forEach(([c,ci])=> list.appendChild(buildItem(c,ci)));
+    if(completed.length){
+      list.appendChild(el("div",{class:"coll-list-group-label"},"Completati"));
+      completed.forEach(([c,ci])=> list.appendChild(buildItem(c,ci)));
+    }
+  } else {
+    state[key].forEach((c,ci)=> list.appendChild(buildItem(c,ci)));
+  }
   wrap.appendChild(list);
 
   const detail = el("div",{class:"coll-detail"});
@@ -9387,7 +9422,7 @@ function render(tab){
   else if(tab==="progetti") renderCollection(main, {
     key:"projects", tab:"progetti", title:"Progetti", titleEl: builtinTabHeader("progetti","Progetti"), active:activeProject,
     setActive:(id)=>activeProject=id, template:PROJECT_TEMPLATE, renderDetail:renderProjectDetail,
-    itemsLabel:"progetti salvati", newBtnLabel:"+ Nuovo progetto", fixedTemplate:true, allowPrivate:true,
+    itemsLabel:"progetti salvati", newBtnLabel:"+ Nuovo progetto", fixedTemplate:true, allowPrivate:true, groupCompleted:true,
     customSave: ()=>saveProjects(false),
     namePrompt:"Nome del progetto:", renameTitle:"Rinomina progetto", renamePrompt:"Rinomina progetto:",
     delBtnLabel:"Elimina progetto", emptyStateText:"Seleziona o crea un progetto per iniziare.", emptyStateIcon:ICON_CHECK

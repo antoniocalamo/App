@@ -8142,6 +8142,47 @@ async function refreshInvestmentPrices(){
   render("finanze");
 }
 
+// Grafico a barre del P&L realizzato per anno solare (una barra per anno, sopra/sotto lo zero
+// a seconda del segno) — l'equivalente per gli investimenti del grafico "Andamento nel tempo"
+// della Panoramica, che invece traccia una linea continua mese per mese sugli snapshot salvati.
+function renderInvestRealizedChart(totalRealizedByYear){
+  const years = Object.keys(totalRealizedByYear).filter(y=>y!=="?").sort();
+  if(!years.length){
+    return emptyState("Nessun P&L realizzato ancora registrato: vendi qualcosa o aggiungi una rettifica per vedere il trend qui.", ICON_COIN);
+  }
+  const vals = years.map(y=>totalRealizedByYear[y]);
+  const w = 1200, h = 200, pad = 30, padLeft = 66, padRight = 20;
+  const maxV = Math.max(...vals, 0), minV = Math.min(...vals, 0);
+  const range = (maxV-minV) || 1;
+  const zeroY = h - pad - ((0-minV)/range)*(h-pad*2);
+  const slot = (w-padLeft-padRight)/years.length;
+  const barW = Math.min(70, slot*0.5);
+  let svg = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block;">`;
+  const yTicks = 4;
+  for(let t=0; t<=yTicks; t++){
+    const val = minV + (range*t/yTicks);
+    const y = h - pad - (t/yTicks)*(h-pad*2);
+    svg += `<line x1="${padLeft}" y1="${y.toFixed(1)}" x2="${w-padRight}" y2="${y.toFixed(1)}" stroke="#EFE6D4" stroke-width="1"/>`;
+    svg += `<text x="${(padLeft-8).toFixed(1)}" y="${(y+3).toFixed(1)}" font-size="9" fill="#8a8065" text-anchor="end">${fmtMoneyPlain(val)}</text>`;
+  }
+  svg += `<line x1="${padLeft}" y1="${zeroY.toFixed(1)}" x2="${w-padRight}" y2="${zeroY.toFixed(1)}" stroke="#E4D6AC" stroke-width="1.4"/>`;
+  years.forEach((y,i)=>{
+    const val = totalRealizedByYear[y];
+    const x = padLeft + slot*i + (slot-barW)/2;
+    const barY = h - pad - ((val - minV)/range)*(h-pad*2);
+    const top = Math.min(barY, zeroY), barH = Math.max(Math.abs(barY-zeroY), 1);
+    const color = val>=0 ? "#2F7A3D" : "#B3352A";
+    svg += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" fill="${color}" rx="3"><title>${y}: ${fmtEUR(val)}</title></rect>`;
+    const labelY = val>=0 ? top-6 : top+barH+12;
+    svg += `<text x="${(x+barW/2).toFixed(1)}" y="${labelY.toFixed(1)}" font-size="10" font-weight="700" fill="${color}" text-anchor="middle">${(val>=0?"+":"")+fmtMoneyPlain(val)}</text>`;
+    svg += `<text x="${(x+barW/2).toFixed(1)}" y="${h-pad+16}" font-size="10" fill="#8a8065" text-anchor="middle">${y}</text>`;
+  });
+  svg += `</svg>`;
+  const wrap = el("div",{});
+  wrap.appendChild(el("div",{html:svg}));
+  return wrap;
+}
+
 let investOrdersWindow = "month";
 let investRealizedYearFilter = "all";
 function renderFinanzeInvestimenti(main){
@@ -8342,6 +8383,12 @@ function renderFinanzeInvestimenti(main){
     }
     main.appendChild(priceToggleRow);
   }
+
+  // --- andamento del P&L realizzato per anno ---
+  const realizedChartBlock = el("div",{class:"card cat-block"});
+  realizedChartBlock.appendChild(el("h4",{},"Andamento del P&L realizzato"));
+  realizedChartBlock.appendChild(renderInvestRealizedChart(totalRealizedByYear));
+  main.appendChild(realizedChartBlock);
 
   // --- ordini recenti (ogni lotto, filtrabile per periodo) ---
   main.appendChild(el("div",{class:"section-head", style:"margin-top:28px;"},[el("h1",{style:"font-size:20px;"},"Ordini recenti")]));

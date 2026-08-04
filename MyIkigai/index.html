@@ -1564,6 +1564,7 @@ input.cashflow-item-occ-input{
 .color-choice{width:28px; height:28px; border-radius:50%; cursor:pointer; border:2px solid transparent;}
 .color-choice.selected{border-color:var(--ink); box-shadow:0 0 0 2px var(--paper-2);}
 .modal-actions{display:flex; flex-wrap:wrap; gap:10px; justify-content:flex-end; margin-top:20px;}
+.modal-confirm-msg{font-size:14px; color:var(--ink); line-height:1.5; white-space:pre-line;}
 .modal-radio-row{display:flex; gap:16px; font-size:13px; color:var(--ink);}
 .modal-radio-row label{display:flex; align-items:center; gap:6px; cursor:pointer;}
 
@@ -2579,13 +2580,13 @@ function ensureGcalTokenClient(){
   gcalTokenClient = google.accounts.oauth2.initTokenClient({
     client_id: GOOGLE_CLIENT_ID,
     scope: GOOGLE_CALENDAR_SCOPE,
-    callback: (resp)=>{
+    callback: async (resp)=>{
       if(resp.error){
         console.error("Google Calendar auth error", resp);
         gcalAccessToken = null; gcalTokenExpiresAt = 0;
         clearGcalSessionToken();
         if(resp.error !== "immediate_failed"){ // "immediate_failed" = solo il tentativo silenzioso non è riuscito, non è un rifiuto esplicito
-          alert("Accesso a Google Calendar non riuscito o negato. Puoi riprovare quando vuoi con \"Connetti Google Calendar\".");
+          await alertModal("Accesso a Google Calendar non riuscito o negato. Puoi riprovare quando vuoi con \"Connetti Google Calendar\".");
         }
         render(currentRenderedTab);
         return;
@@ -2603,9 +2604,9 @@ function ensureGcalTokenClient(){
   return gcalTokenClient;
 }
 // Avvia il popup di consenso esplicito (click dell'utente sul bottone "Connetti").
-function connectGoogleCalendar(){
+async function connectGoogleCalendar(){
   const client = ensureGcalTokenClient();
-  if(!client){ alert("La libreria di accesso Google non si è ancora caricata, riprova tra un istante."); return; }
+  if(!client){ await alertModal("La libreria di accesso Google non si è ancora caricata, riprova tra un istante."); return; }
   client.requestAccessToken({ prompt: "consent" });
 }
 // Tentativo "silenzioso" (nessun popup, salvo il breve lampeggio impostato da Google stesso)
@@ -3199,15 +3200,69 @@ function attachDayCardDrop(dayCard, day){
   // del giorno" quando non sei sopra una riga specifica (es. spazio vuoto sotto le task).
   dayCard.dataset.dayDrop = day;
 }
-function openModal(contentBuilderFn){
+function openModal(contentBuilderFn, onClose){
   const overlay = el("div",{class:"modal-overlay"});
   const modal = el("div",{class:"modal-card"});
-  function closeModal(){ overlay.remove(); }
+  function closeModal(){ overlay.remove(); if(onClose) onClose(); }
   contentBuilderFn(modal, closeModal);
   overlay.appendChild(modal);
   overlay.addEventListener("click", (e)=>{ if(e.target===overlay) closeModal(); });
   document.body.appendChild(overlay);
   return closeModal;
+}
+// Sostituiscono confirm()/alert()/prompt() del browser (finestre grigie di sistema, non in stile
+// con il resto dell'app) con la stessa finestra "modal-card" usata ovunque altrove. Tutte e tre
+// restituiscono una Promise: si chiudono anche cliccando fuori (come i modal nativi), nel qual
+// caso si comportano come un "Annulla" (false / null), mai lasciando la Promise in sospeso.
+function confirmModal(message, opts={}){
+  return new Promise(resolve=>{
+    let done = false;
+    function finish(val){ if(done) return; done = true; resolve(val); }
+    openModal((modal, close)=>{
+      modal.appendChild(el("div",{class:"modal-confirm-msg"}, message));
+      const actions = el("div",{class:"modal-actions"});
+      const cancelBtn = el("button",{class:"btn ghost"}, opts.cancelLabel || "Annulla");
+      cancelBtn.addEventListener("click", ()=>{ finish(false); close(); });
+      const okBtn = el("button",{class:"btn "+(opts.danger?"danger":"primary")}, opts.okLabel || "Conferma");
+      okBtn.addEventListener("click", ()=>{ finish(true); close(); });
+      actions.appendChild(cancelBtn); actions.appendChild(okBtn);
+      modal.appendChild(actions);
+    }, ()=> finish(false));
+  });
+}
+function alertModal(message, opts={}){
+  return new Promise(resolve=>{
+    let done = false;
+    function finish(){ if(done) return; done = true; resolve(); }
+    openModal((modal, close)=>{
+      modal.appendChild(el("div",{class:"modal-confirm-msg"}, message));
+      const actions = el("div",{class:"modal-actions"});
+      const okBtn = el("button",{class:"btn primary"}, opts.okLabel || "Ho capito");
+      okBtn.addEventListener("click", ()=>{ finish(); close(); });
+      actions.appendChild(okBtn);
+      modal.appendChild(actions);
+    }, finish);
+  });
+}
+function promptModal(label, defaultValue){
+  return new Promise(resolve=>{
+    let done = false;
+    function finish(val){ if(done) return; done = true; resolve(val); }
+    openModal((modal, close)=>{
+      modal.appendChild(el("div",{class:"field-label"}, label));
+      const input = el("input",{type:"text", value: defaultValue||""});
+      modal.appendChild(input);
+      const actions = el("div",{class:"modal-actions"});
+      const cancelBtn = el("button",{class:"btn ghost"}, "Annulla");
+      cancelBtn.addEventListener("click", ()=>{ finish(null); close(); });
+      const okBtn = el("button",{class:"btn primary"}, "OK");
+      okBtn.addEventListener("click", ()=>{ finish(input.value.trim()||null); close(); });
+      input.addEventListener("keydown", (e)=>{ if(e.key==="Enter"){ finish(input.value.trim()||null); close(); } });
+      actions.appendChild(cancelBtn); actions.appendChild(okBtn);
+      modal.appendChild(actions);
+      setTimeout(()=> input.focus(), 0);
+    }, ()=> finish(null));
+  });
 }
 function colorBall(currentColor, onChange){
   const wrap = el("div",{class:"color-ball", title:"Cambia colore"});
@@ -3336,8 +3391,8 @@ function openSubItemEditModal(item, opts){
     }
     const actions = el("div",{class:"modal-actions"});
     const delBtn = el("button",{class:"btn danger small", style:"margin-right:auto;"}, opts.delBtnLabel || "Elimina sotto-scheda");
-    delBtn.addEventListener("click", ()=>{
-      if(!confirm('Eliminare la sotto-scheda "'+item.name+'"?')) return;
+    delBtn.addEventListener("click", async ()=>{
+      if(!await confirmModal('Eliminare la sotto-scheda "'+item.name+'"?', {danger:true, okLabel:"Elimina"})) return;
       opts.onDelete();
       close();
     });
@@ -4183,7 +4238,7 @@ function buildGcalStatusButton(){
     const wrap = el("span",{class:"gcal-status-wrap"});
     wrap.appendChild(el("span",{class:"btn ghost small", style:"cursor:default;opacity:.75;"},"● Google Calendar connesso"));
     const off = el("button",{class:"btn ghost small", title:"Scollega Google Calendar"},"Scollega");
-    off.addEventListener("click", ()=>{ if(confirm("Scollegare Google Calendar? Gli eventi non verranno più mostrati finché non ricolleghi.")) disconnectGoogleCalendar(); });
+    off.addEventListener("click", async ()=>{ if(await confirmModal("Scollegare Google Calendar? Gli eventi non verranno più mostrati finché non ricolleghi.", {danger:true, okLabel:"Scollega"})) disconnectGoogleCalendar(); });
     wrap.appendChild(off);
     return wrap;
   }
@@ -4249,8 +4304,8 @@ function renderDashboard(main){
   toggleLabel.appendChild(document.createTextNode("Mostra i task completati"));
   todoActions.appendChild(toggleLabel);
   const clearBtn = el("button",{class:"btn danger small"},"Elimina completati");
-  clearBtn.addEventListener("click", ()=>{
-    if(confirm("Sei sicuro di voler eliminare definitivamente tutti i task completati della settimana visibile? L'azione non è reversibile.")){
+  clearBtn.addEventListener("click", async ()=>{
+    if(await confirmModal("Sei sicuro di voler eliminare definitivamente tutti i task completati della settimana visibile? L'azione non è reversibile.", {danger:true, okLabel:"Elimina"})){
       visibleDates().forEach(dateStr=>{
         if(state.dashboard.days[dateStr]){
           state.dashboard.days[dateStr] = state.dashboard.days[dateStr].filter(t=>!t.done);
@@ -4530,8 +4585,8 @@ function backlogBoxCard(box){
   titleWrap.appendChild(titleInput);
   head.appendChild(titleWrap);
   const delBtn = el("span",{class:"del", html:"✕", style:"cursor:pointer;opacity:.5;font-size:13px;"});
-  delBtn.addEventListener("click", ()=>{
-    if(confirm('Sei sicuro di voler eliminare la board "'+box.title+'"? L\'azione non è reversibile.')){
+  delBtn.addEventListener("click", async ()=>{
+    if(await confirmModal('Sei sicuro di voler eliminare la board "'+box.title+'"? L\'azione non è reversibile.', {danger:true, okLabel:"Elimina"})){
       state.dashboard.backlogBoxes = state.dashboard.backlogBoxes.filter(b=>b.id!==box.id);
       store.set(privKey("dashboard"), state.dashboard); render("dashboard");
     }
@@ -5645,7 +5700,7 @@ function renderCollection(main, opts){
   const wrap = el("div",{class:"collection"});
   const list = el("div",{class:"coll-list"});
   const newBtn = el("button",{class:"btn primary"}, newBtnLabel);
-  newBtn.addEventListener("click", ()=>{
+  newBtn.addEventListener("click", async ()=>{
     if(opts.fixedTemplate){
       // Alcune schede (es. Progetti) hanno un unico formato fisso: niente scelta di template.
       if(opts.allowPrivate){
@@ -5658,7 +5713,7 @@ function renderCollection(main, opts){
         });
         return;
       }
-      const name = prompt(namePrompt);
+      const name = await promptModal(namePrompt);
       if(!name) return;
       const item = { id:"c"+Date.now(), name, created:new Date().toLocaleDateString("it-IT"), data: template() };
       state[key].push(item);
@@ -5774,9 +5829,9 @@ function openNewSubItemModal(namePromptLabel, onCreate){
     const cancelBtn = el("button",{class:"btn ghost"},"Annulla");
     cancelBtn.addEventListener("click", close);
     const createBtn = el("button",{class:"btn primary"},"Crea");
-    createBtn.addEventListener("click", ()=>{
+    createBtn.addEventListener("click", async ()=>{
       if(!nameInput.value.trim()){
-        alert("Il nome della sotto-scheda è obbligatorio.");
+        await alertModal("Il nome della sotto-scheda è obbligatorio.");
         nameInput.focus();
         return;
       }
@@ -5810,9 +5865,9 @@ function openNewProjectModal(namePromptLabel, onCreate){
     const cancelBtn = el("button",{class:"btn ghost"},"Annulla");
     cancelBtn.addEventListener("click", close);
     const createBtn = el("button",{class:"btn primary"},"Crea");
-    createBtn.addEventListener("click", ()=>{
+    createBtn.addEventListener("click", async ()=>{
       if(!nameInput.value.trim()){
-        alert("Il nome del progetto è obbligatorio.");
+        await alertModal("Il nome del progetto è obbligatorio.");
         nameInput.focus();
         return;
       }
@@ -5868,8 +5923,8 @@ function renderGenericTable(container, item, onSave){
     if(item.columns.length>1){
       const delColBtn = el("span",{class:"del", html:"✕", title:"Elimina colonna",
         style:"cursor:pointer;opacity:.5;font-size:11px; position:absolute; top:8px; right:14px;"});
-      delColBtn.addEventListener("click", ()=>{
-        if(confirm('Eliminare la colonna "'+(col.label||"")+'"?')){
+      delColBtn.addEventListener("click", async ()=>{
+        if(await confirmModal('Eliminare la colonna "'+(col.label||"")+'"?', {danger:true, okLabel:"Elimina"})){
           item.columns.splice(ci,1);
           item.rows.forEach(r=>{ delete r[col.id]; });
           onSave();
@@ -6046,8 +6101,8 @@ function renderFreeTextEditor(container, item, onSave){
 
   const tableBtn = el("button",{type:"button", class:"richtext-btn", title:"Inserisci tabella"}, "▦");
   tableBtn.addEventListener("mousedown", (e)=>{ e.preventDefault(); });
-  tableBtn.addEventListener("click", ()=>{
-    const input = prompt("Dimensioni tabella (righe x colonne):", "3x3");
+  tableBtn.addEventListener("click", async ()=>{
+    const input = await promptModal("Dimensioni tabella (righe x colonne):", "3x3");
     if(!input) return;
     const m = input.match(/(\d+)\s*[x×]\s*(\d+)/i);
     const rows = m ? Math.max(1, Math.min(20, parseInt(m[1],10))) : 3;
@@ -6141,8 +6196,8 @@ function renderTripDetail(detail, trip){
     const titleInput = el("input",{type:"text", class:"cat-title-input", value:cat.title, placeholder:"Nome categoria"});
     titleInput.addEventListener("change", ()=>{ cat.title=titleInput.value; store.set("trips", state.trips); });
     const delCatBtn = el("span",{class:"del", html:"✕", style:"cursor:pointer;opacity:.5;font-size:12px;"});
-    delCatBtn.addEventListener("click", ()=>{
-      if(confirm('Eliminare la categoria "'+(cat.title||"senza nome")+'" e tutte le sue voci?')){
+    delCatBtn.addEventListener("click", async ()=>{
+      if(await confirmModal('Eliminare la categoria "'+(cat.title||"senza nome")+'" e tutte le sue voci?', {danger:true, okLabel:"Elimina"})){
         trip.data.splice(ci,1);
         store.set("trips", state.trips); render("viaggio");
       }
@@ -7211,7 +7266,7 @@ function openAmortizationModal(item, onSave){
       const cancelBtn = el("button",{class:"btn ghost"},"Annulla");
       cancelBtn.addEventListener("click", close);
       const importBtn = el("button",{class:"btn primary"},"Importa piano");
-      importBtn.addEventListener("click", ()=>{
+      importBtn.addEventListener("click", async ()=>{
         let rawRows;
         if(excelRadio.checked){
           if(!excelRows || !excelRows.length){ errBox.textContent = "Carica prima un file Excel/CSV valido."; return; }
@@ -7240,11 +7295,11 @@ function openAmortizationModal(item, onSave){
         const firstD = parseItDate(rows[0].date), lastD = parseItDate(rows[rows.length-1].date);
         if(firstD && lastD){
           const opts = {day:"numeric", month:"long", year:"numeric"};
-          const ok = confirm(
+          const ok = await confirmModal(
             "Controlla che le date siano nel verso giusto (giorno/mese, non mese/giorno):\n\n"+
             "Prima rata: "+firstD.toLocaleDateString("it-IT",opts)+"\n"+
             "Ultima rata: "+lastD.toLocaleDateString("it-IT",opts)+"\n\n"+
-            "Sono corrette?"
+            "Sono corrette?", {okLabel:"Sì, sono corrette"}
           );
           if(!ok) return;
         }
@@ -7286,8 +7341,8 @@ function openAmortizationModal(item, onSave){
       modal.appendChild(gotoWrap);
       const actions = el("div",{class:"modal-actions"});
       const removeBtn = el("button",{class:"btn danger small", style:"margin-right:auto;"},"Rimuovi piano");
-      removeBtn.addEventListener("click", ()=>{
-        if(confirm("Rimuovere il piano di ammortamento? Potrai reimportarlo in seguito.")){
+      removeBtn.addEventListener("click", async ()=>{
+        if(await confirmModal("Rimuovere il piano di ammortamento? Potrai reimportarlo in seguito.", {danger:true, okLabel:"Rimuovi"})){
           delete item.amortization;
           item.value = "";
           onSave(); close(); render("finanze");
@@ -8244,7 +8299,7 @@ async function refreshInvestmentPrices(){
     }catch(e){ failures.push(inv.symbol); }
   }
   if(failures.length){
-    alert("Non sono riuscito ad aggiornare automaticamente: "+failures.join(", ")+".\nSpesso è perché il piano gratuito di Twelve Data non copre quel titolo (es. ETF europei) — in quel caso usa l'icona 💰 sulla riga per aggiornarne il prezzo a mano.");
+    await alertModal("Non sono riuscito ad aggiornare automaticamente: "+failures.join(", ")+".\nSpesso è perché il piano gratuito di Twelve Data non copre quel titolo (es. ETF europei) — in quel caso usa l'icona 💰 sulla riga per aggiornarne il prezzo a mano.");
   }
   store.set(privKey("finance"), state.finance);
   render("finanze");
@@ -8443,9 +8498,9 @@ function renderFinanzeInvestimenti(main){
     priceBtn.addEventListener("click", ()=> openManualPriceUpdateModal(inv));
     rowActions.appendChild(priceBtn);
     const del = el("span",{class:"del", html:"✕"});
-    del.addEventListener("click", ()=>{
+    del.addEventListener("click", async ()=>{
       const archiveNote = r.combinedRealizedEUR ? " Il P&L realizzato ("+(r.combinedRealizedEUR>=0?"+":"")+fmtEUR(r.combinedRealizedEUR)+") resterà conteggiato nel totale storico, diviso per anno." : "";
-      if(confirm("Rimuovere "+inv.symbol+" (tutti gli ordini) dal portafoglio?"+archiveNote)){
+      if(await confirmModal("Rimuovere "+inv.symbol+" (tutti gli ordini) dal portafoglio?"+archiveNote, {danger:true, okLabel:"Rimuovi"})){
         if(Object.keys(r.realizedByYearEUR).length){
           if(!state.finance.investRealizedArchive) state.finance.investRealizedArchive = {};
           Object.entries(r.realizedByYearEUR).forEach(([y,v])=>{
@@ -8808,10 +8863,10 @@ function renderFinanzeDashboard(main){
       if(menu.classList.contains("open")){ closeMenu(); }
       else { menu.classList.add("open"); document.addEventListener("click", onDocClick); }
     });
-    function doClear(scope){
+    async function doClear(scope){
       if(scope==="all"){
         const total = state.finance.history.length;
-        if(!confirm("Cancellare definitivamente tutti i "+total+" snapshot dello storico? L'azione non è reversibile.")) return;
+        if(!await confirmModal("Cancellare definitivamente tutti i "+total+" snapshot dello storico? L'azione non è reversibile.", {danger:true, okLabel:"Cancella"})) return;
         state.finance.history = [];
       } else if(scope==="future"){
         const now = new Date(); now.setHours(23,59,59,999);
@@ -8821,8 +8876,8 @@ function renderFinanzeDashboard(main){
           return d && d<=now;
         });
         const removed = before - kept.length;
-        if(!removed){ alert("Nessuno snapshot con data futura da cancellare."); return; }
-        if(!confirm("Cancellare "+removed+" snapshot con data futura (oltre oggi)? L'azione non è reversibile.")) return;
+        if(!removed){ await alertModal("Nessuno snapshot con data futura da cancellare."); return; }
+        if(!await confirmModal("Cancellare "+removed+" snapshot con data futura (oltre oggi)? L'azione non è reversibile.", {danger:true, okLabel:"Cancella"})) return;
         state.finance.history = kept;
       } else {
         const cutoff = new Date();
@@ -8834,8 +8889,8 @@ function renderFinanzeDashboard(main){
           return d && d < cutoff;
         });
         const removed = before - kept.length;
-        if(!removed){ alert("Nessuno snapshot da cancellare in quell'intervallo."); return; }
-        if(!confirm("Cancellare "+removed+" snapshot degli ultimi "+(scope==="month"?"30 giorni":"12 mesi")+"? L'azione non è reversibile.")) return;
+        if(!removed){ await alertModal("Nessuno snapshot da cancellare in quell'intervallo."); return; }
+        if(!await confirmModal("Cancellare "+removed+" snapshot degli ultimi "+(scope==="month"?"30 giorni":"12 mesi")+"? L'azione non è reversibile.", {danger:true, okLabel:"Cancella"})) return;
         state.finance.history = kept;
       }
       store.set(privKey("finance"), state.finance); render("finanze");
@@ -8936,8 +8991,8 @@ function renderCategorizedChecklist(detail, board, save, idPrefix, tabName){
     const titleInput = el("input",{type:"text", class:"cat-title-input", value:cat.title, placeholder:"Nome categoria"});
     titleInput.addEventListener("change", ()=>{ cat.title=titleInput.value; save(); });
     const delCatBtn = el("span",{class:"del", html:"✕", style:"cursor:pointer;opacity:.5;font-size:12px;"});
-    delCatBtn.addEventListener("click", ()=>{
-      if(confirm('Eliminare la categoria "'+(cat.title||"senza nome")+'" e tutte le sue voci?')){
+    delCatBtn.addEventListener("click", async ()=>{
+      if(await confirmModal('Eliminare la categoria "'+(cat.title||"senza nome")+'" e tutte le sue voci?', {danger:true, okLabel:"Elimina"})){
         board.data.splice(ci,1);
         save();
       }
@@ -9047,8 +9102,8 @@ function customTabButton(tab, index, arr){
       getColor: ()=>tab.color, setColor: (idx)=>{ tab.color=idx; btn.style.background=colorForIndex(idx)||""; store.setQuiet(targetKey(), targetArr()); },
       getName: ()=>tab.name, setName: (n)=>{ tab.name=n; store.setQuiet(targetKey(), targetArr()); },
       afterSave: ()=>renderCustomTabButtons(),
-      onDelete: ()=>{
-        if(confirm('Eliminare la scheda "'+tab.name+'" e tutti i suoi contenuti? Questa azione non è reversibile.')){
+      onDelete: async ()=>{
+        if(await confirmModal('Eliminare la scheda "'+tab.name+'" e tutti i suoi contenuti? Questa azione non è reversibile.', {danger:true, okLabel:"Elimina"})){
           deleteCustomTab(tab);
         }
       }
@@ -9353,8 +9408,8 @@ function enhanceBuiltinTabs(){
         afterSave: ()=>{ applyBuiltinIcons(); applyBuiltinColors(); applyBuiltinLabels(); },
         onResetIcon: state.builtinIcons[key] ? ()=>{ delete state.builtinIcons[key]; store.setQuiet(privKey("builtinIcons"), state.builtinIcons); applyBuiltinIcons(); } : null,
         onResetColor: state.builtinColors[key]!=null ? ()=>{ delete state.builtinColors[key]; store.setQuiet(privKey("builtinColors"), state.builtinColors); applyBuiltinColors(); } : null,
-        onDelete: ()=>{
-          if(confirm('Nascondere la scheda "'+(state.builtinLabels[key]||BUILTIN_TABS[key])+'"? I dati restano salvati e potrai farla ricomparire da "+ Nuova scheda".')){
+        onDelete: async ()=>{
+          if(await confirmModal('Nascondere la scheda "'+(state.builtinLabels[key]||BUILTIN_TABS[key])+'"? I dati restano salvati e potrai farla ricomparire da "+ Nuova scheda".', {okLabel:"Nascondi"})){
             state.hiddenBuiltins.push(key);
             store.set(privKey("hiddenBuiltins"), state.hiddenBuiltins);
             applyHiddenBuiltins();

@@ -8158,7 +8158,10 @@ function renderFinanzeInvestimenti(main){
     Object.entries(manualRealized).forEach(([y,v])=>{ realizedByYearEUR[y] = (realizedByYearEUR[y]||0) + v; });
     const manualRealizedTotal = Object.values(manualRealized).reduce((s,v)=>s+v,0);
     const combinedRealizedEUR = (realizedEUR||0) + manualRealizedTotal;
-    return { inv, qty, cost, avgBuyPrice, isEUR, fx, priceNative, priceKnown, valueEUR, costEUR, realized, realizedEUR, realizedByYearEUR, combinedRealizedEUR };
+    // realizzato calcolato dai lotti (valuta nativa) che non è stato possibile convertire in €
+    // perché manca ancora il tasso di cambio: usato solo per avvisare l'utente, non nei totali
+    const unconvertedRealized = fx==null ? realized : 0;
+    return { inv, qty, cost, avgBuyPrice, isEUR, fx, priceNative, priceKnown, valueEUR, costEUR, realized, realizedByYear, realizedEUR, realizedByYearEUR, combinedRealizedEUR, unconvertedRealized };
   });
 
   let totalEUR = 0, totalCostEUR = 0;
@@ -8253,6 +8256,13 @@ function renderFinanzeInvestimenti(main){
         mainCol.appendChild(el("span",{class:"invest-pnl "+(rowRealized>=0?"positive":"negative"), style:"font-size:10.5px; text-align:left; margin-top:1px;"},
           "Realizzato"+(investRealizedYearFilter==="all"?"":" "+investRealizedYearFilter)+": "+(rowRealized>=0?"+":"")+fmtEUR(rowRealized)
         ));
+      } else if(r.fx==null){
+        const nativeForYear = investRealizedYearFilter==="all" ? r.realized : (r.realizedByYear[investRealizedYearFilter]||0);
+        if(nativeForYear){
+          mainCol.appendChild(el("span",{class:"invest-updated stale", style:"margin-top:1px;"},
+            "Realizzato "+fmtNativeAmount(nativeForYear, inv.currency)+" non convertito: manca il cambio (💰)"
+          ));
+        }
       }
     }
     row.appendChild(mainCol);

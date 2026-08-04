@@ -7824,10 +7824,19 @@ function openAddHoldingModal(match){
     modal.appendChild(el("h3",{}, "Aggiungi "+match.symbol));
     modal.appendChild(el("div",{style:"font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;"},
       [match.instrument_name||match.name||"", match.exchange||"", match.currency||""].filter(Boolean).join(" · ")));
+    const listedCurrency = (match.currency||"EUR").toUpperCase();
+    modal.appendChild(el("div",{class:"field-label"},"Valuta in cui inserisci il prezzo qui sotto"));
+    const curInp = el("input",{type:"text", placeholder:"EUR"});
+    curInp.value = "EUR"; // di default assumiamo che il broker mostri già i prezzi convertiti in €
+    modal.appendChild(curInp);
+    if(listedCurrency!=="EUR"){
+      modal.appendChild(el("div",{style:"font-size:11px;color:var(--ink-soft);margin-top:-6px;margin-bottom:10px;"},
+        "Il titolo è quotato in "+listedCurrency+". Se il tuo broker ti mostra già i prezzi convertiti in euro, lascia EUR. Se invece hai i prezzi originali in "+listedCurrency+", scrivilo qui — dovrai poi impostare tu il cambio (icona 💰 sulla riga)."));
+    }
     modal.appendChild(el("div",{class:"field-label"},"Quantità"));
     const qtyInp = el("input",{type:"text", placeholder:"es. 10"});
     modal.appendChild(qtyInp);
-    modal.appendChild(el("div",{class:"field-label"},"Prezzo di carico (per unità, nella valuta del titolo: "+(match.currency||"EUR")+")"));
+    modal.appendChild(el("div",{class:"field-label"},"Prezzo di carico (per unità, nella valuta scelta sopra)"));
     const priceInp = el("input",{type:"text", placeholder:"es. 85,40"});
     modal.appendChild(priceInp);
     modal.appendChild(el("div",{class:"field-label"},"Data acquisto (facoltativa)"));
@@ -7842,10 +7851,11 @@ function openAddHoldingModal(match){
     saveBtn.addEventListener("click", ()=>{
       const qty = parseItalianNumber(qtyInp.value);
       const buyPrice = parseItalianNumber(priceInp.value);
+      const currency = curInp.value.trim().toUpperCase() || "EUR";
       if(!qty || !buyPrice){ errBox.textContent = "Inserisci quantità e prezzo di carico validi."; return; }
       addOrMergeInvestment({
         symbol: match.symbol, name: match.instrument_name||match.name||match.symbol,
-        exchange: match.exchange||"", micCode: match.mic_code||"", currency: (match.currency||"EUR").toUpperCase(), manual:false
+        exchange: match.exchange||"", micCode: match.mic_code||"", currency, manual:false
       }, qty, buyPrice, dateInp.value.trim(), "buy");
       close(); render("finanze");
     });

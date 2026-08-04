@@ -1785,7 +1785,6 @@ input.cashflow-item-occ-input{
     </label>
     <div id="login-error" class="login-error"></div>
     <button type="submit" class="btn primary" style="width:100%;margin-top:6px;">Accedi</button>
-    <button type="button" id="guest-btn" class="btn ghost" style="width:100%;margin-top:8px;">Entra come guest (solo test)</button>
   </form>
   <div class="login-credit" id="login-version"></div>
 </div>
@@ -3021,13 +3020,6 @@ document.getElementById("login-form").addEventListener("submit", async (e)=>{
   errEl.textContent = "";
   const { error } = await sb.auth.signInWithPassword({ email, password: pass });
   if(error) errEl.textContent = "Credenziali non valide.";
-});
-document.getElementById("guest-btn").addEventListener("click", async ()=>{
-  // Bypass di test: NON è una sessione Supabase reale. I dati privati (Home/Finanze)
-  // non verranno salvati (bloccati dalla RLS), solo quelli condivisi funzionano.
-  isGuest = true;
-  currentUser = { id: "guest-test-user", email: "guest@test.local" };
-  await startApp();
 });
 document.getElementById("logout-btn").addEventListener("click", async ()=>{
   if(isGuest){

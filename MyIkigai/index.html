@@ -7,7 +7,6 @@
 <link id="favicon-link" rel="icon" type="image/png" href="">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{
@@ -1908,6 +1907,11 @@ input.cashflow-item-occ-input{
 <div id="mobile-bottom-bar" class="mobile-bottom-bar"></div>
 <div id="mobile-more-sheet" class="mobile-more-sheet"></div>
 
+<!-- Spostato qui da <head> (dove bloccava la costruzione della pagina prima ancora che il
+     resto dell'HTML sotto fosse analizzato) a subito prima dello script dell'app che lo usa:
+     stesso ordine di esecuzione di sempre, ma il browser può disegnare la struttura della
+     pagina mentre questo file si scarica, invece di aspettarlo fin dall'inizio. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 // Avviso visibile quando un salvataggio verso Supabase fallisce (rete assente, errore del
 // server, ecc.): prima di questa versione l'unica traccia era un log tecnico invisibile in
@@ -2403,7 +2407,7 @@ const store = {
   }
 };
 
-let state = { dashboard:null, orto:null, trips:null, bbqs:null, tires:null, finance:null, sharedBoards:null, customTabs:null, customTabsPrivate:null, hiddenBuiltins:null, taglines:null, dashTitles:null, bootPhrases:null, gommeLayout:null, builtinLabels:null, accountSettings:null, maintenanceItems:null, googleCalendar:null, projectAssignees:null, ortoWeatherLocation:null, mobilePinned:null };
+let state = { dashboard:null, orto:null, trips:null, bbqs:null, finance:null, sharedBoards:null, customTabs:null, customTabsPrivate:null, hiddenBuiltins:null, taglines:null, dashTitles:null, bootPhrases:null, gommeLayout:null, builtinLabels:null, accountSettings:null, maintenanceItems:null, googleCalendar:null, projectAssignees:null, ortoWeatherLocation:null, mobilePinned:null };
 let activeTrip = null, activeBbq = null, activeSharedBoard = null, activeProject = null;
 let activeMaintenanceItem = null;
 let goodThingPick = null;
@@ -2438,7 +2442,7 @@ let lastTaskByDay = {};
 let historyExpanded = false;
 let currentRenderedTab = "dashboard";
 const STATE_KEY_MAP_SHARED = {
-  orto:"orto", trips:"trips", bbqs:"bbqs", tires:"tires",
+  orto:"orto", trips:"trips", bbqs:"bbqs",
   sharedBoards:"sharedBoards", customTabs:"customTabs", taglines:"taglines", dashTitles:"dashTitles",
   bootPhrases:"bootPhrases",
   maintenanceItems:"maintenanceItems"
@@ -2751,13 +2755,17 @@ function migrateSubItemTypes(arr){
 // generico "table" con le stesse colonne (Treno, Intervento, Data, Km, Note), portando dentro
 // le righe che c'erano nella vecchia chiave "tires". Da qui in poi Gomme è una sotto-scheda
 // Tabella come le altre, non più un tipo a parte.
-function migrateGommeToTable(){
+async function migrateGommeToTable(){
   let target = state.maintenanceItems.find(it=>it.id==="tires");
   if(!target){
     target = {id:"tires", name:"Gomme", created:new Date().toLocaleDateString("it-IT")};
     state.maintenanceItems.unshift(target);
   }
   if(target.type!=="table"){
+    // La chiave "tires" (dati pre-migrazione) ormai serve solo qui: non viene più scaricata a
+    // ogni avvio insieme al resto (era nel Promise.all di loadAll), solo in questo caso raro
+    // in cui c'è ancora davvero qualcosa da migrare.
+    const legacyTires = await store.get("tires", DEFAULTS.tires);
     target.type = "table";
     target.columns = [
       {id:"treno", label:"Treno", width:110},
@@ -2766,7 +2774,7 @@ function migrateGommeToTable(){
       {id:"km", label:"Km", width:80},
       {id:"note", label:"Note", width:220}
     ];
-    target.rows = (state.tires||[]).map(r=>({
+    target.rows = (legacyTires||[]).map(r=>({
       id:r.id, treno:r.treno||"", intervento:r.intervento||"", data:r.data||"", km:r.km||"", note:r.note||""
     }));
     store.set("maintenanceItems", state.maintenanceItems);
@@ -2797,7 +2805,7 @@ async function loadAll(){
   // identico ordine relativo di prima — cambia solo il "quando arrivano i dati", non la logica.
   const [
     dashboardRaw, ortoRaw, weatherLocationRaw, ortoWeatherLocationRaw,
-    tripsRaw, bbqsRaw, tiresRaw, maintenanceItemsRaw,
+    tripsRaw, bbqsRaw, maintenanceItemsRaw,
     financeRaw, sharedBoardsRaw, projectsRaw, projectsPrivateRaw,
     projectAssigneesRaw, customTabsRaw, customTabsPrivateRaw,
     hiddenBuiltinsRaw, builtinLabelsRaw, builtinColorsRaw, builtinIconsRaw,
@@ -2810,7 +2818,6 @@ async function loadAll(){
     store.get("ortoWeatherLocation", _NOTFOUND),
     store.get("trips", DEFAULTS.trips),
     store.get("bbqs", DEFAULTS.bbqs),
-    store.get("tires", DEFAULTS.tires),
     store.get("maintenanceItems", [{id:"tires", name:"Gomme", type:"tires", created:new Date().toLocaleDateString("it-IT")}]),
     store.get(privKey("finance"), DEFAULTS.finance),
     store.get("sharedBoards", DEFAULTS.sharedBoards),
@@ -2933,9 +2940,8 @@ async function loadAll(){
 
   state.trips = migrateSubItemTypes(tripsRaw);
   state.bbqs = migrateSubItemTypes(bbqsRaw);
-  state.tires = tiresRaw;
   state.maintenanceItems = migrateSubItemTypes(maintenanceItemsRaw);
-  migrateGommeToTable();
+  await migrateGommeToTable();
   state.finance = financeRaw;
   if(!state.finance.cashflow || !state.finance.cashflow.incomes){ state.finance.cashflow = {incomes:[], expenses:[]}; }
   if(!state.finance.investments) state.finance.investments = [];
@@ -6959,8 +6965,21 @@ function renderMaintenanceItemDetail(detail, item){
 }
 function renderGomme(main){
   if(!state.maintenanceItems.length){
-    state.maintenanceItems = [{id:"tires", name:"Gomme", created:new Date().toLocaleDateString("it-IT")}];
-    migrateGommeToTable();
+    // Ricreazione da zero (es. l'utente ha cancellato tutte le sotto-schede): niente dati vecchi
+    // da importare, quindi costruiamo direttamente una Gomme vuota invece di passare dalla
+    // migrazione asincrona (pensata solo per il caso reale di dati "tires" preesistenti).
+    state.maintenanceItems = [{
+      id:"tires", name:"Gomme", created:new Date().toLocaleDateString("it-IT"), type:"table",
+      columns:[
+        {id:"intervento", label:"Intervento", width:220},
+        {id:"treno", label:"Treno", width:110},
+        {id:"data", label:"Data", width:130, type:"date"},
+        {id:"km", label:"Km", width:80},
+        {id:"note", label:"Note", width:220}
+      ],
+      rows:[]
+    }];
+    store.set("maintenanceItems", state.maintenanceItems);
   }
   main.appendChild(el("div",{class:"section-head"},[
     builtinTabHeader("gomme","Manutenzione"),

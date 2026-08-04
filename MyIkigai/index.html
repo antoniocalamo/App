@@ -316,6 +316,27 @@ h1,h2,h3,.display{font-family:'Fraunces',serif;}
   .undo-redo-wrap{ right:14px; bottom:14px; gap:6px; }
   .undo-float{ padding:7px 13px; font-size:11.5px; }
 }
+.save-error-toast{
+  position:fixed; top:0; left:50%; z-index:700;
+  display:flex; align-items:center; gap:10px;
+  background:var(--urgent-text, #B3434B); color:#fff;
+  padding:9px 14px; border-radius:0 0 12px 12px;
+  font-family:'Inter',sans-serif; font-size:12.5px; font-weight:600;
+  box-shadow:0 6px 18px rgba(0,0,0,0.18);
+  transform:translate(-50%,-100%); opacity:0; pointer-events:none;
+  transition:transform .2s ease, opacity .2s ease;
+  max-width:min(92vw,460px);
+}
+.save-error-toast.visible{ transform:translate(-50%,0); opacity:1; pointer-events:auto; }
+.save-error-toast-msg{flex:1; min-width:0;}
+.save-error-toast-retry{
+  flex-shrink:0; background:rgba(255,255,255,0.18); color:#fff; border:1px solid rgba(255,255,255,0.5);
+  border-radius:999px; padding:4px 12px; font-size:12px; font-weight:700; cursor:pointer;
+  font-family:'Inter',sans-serif;
+}
+.save-error-toast-retry:hover{background:rgba(255,255,255,0.3);}
+.save-error-toast-close{flex-shrink:0; cursor:pointer; opacity:.75; font-size:11px; padding:2px;}
+.save-error-toast-close:hover{opacity:1;}
 .topbar{
   display:flex; align-items:flex-start; gap:12px;
   padding:12px 44px 8px 20px; flex-shrink:0;
@@ -1879,10 +1900,41 @@ input.cashflow-item-occ-input{
   <button id="undo-btn" class="undo-float" title="Annulla ultima modifica (es. un'eliminazione)">↶ Undo</button>
   <button id="redo-btn" class="undo-float" title="Ripristina la modifica annullata">↷ Redo</button>
 </div>
+<div id="save-error-toast" class="save-error-toast">
+  <span class="save-error-toast-msg" id="save-error-toast-msg"></span>
+  <button type="button" id="save-error-toast-retry" class="save-error-toast-retry">Riprova</button>
+  <span id="save-error-toast-close" class="save-error-toast-close" title="Chiudi">✕</span>
+</div>
 <div id="mobile-bottom-bar" class="mobile-bottom-bar"></div>
 <div id="mobile-more-sheet" class="mobile-more-sheet"></div>
 
 <script>
+// Avviso visibile quando un salvataggio verso Supabase fallisce (rete assente, errore del
+// server, ecc.): prima di questa versione l'unica traccia era un log tecnico invisibile in
+// console, quindi una modifica poteva andare persa senza che l'utente se ne accorgesse. Un solo
+// banner condiviso: un nuovo fallimento ne aggiorna semplicemente il messaggio/il "Riprova".
+const saveErrorToast = {
+  el: null, msgEl: null, retryBtn: null, closeBtn: null,
+  init(){
+    this.el = document.getElementById("save-error-toast");
+    this.msgEl = document.getElementById("save-error-toast-msg");
+    this.retryBtn = document.getElementById("save-error-toast-retry");
+    this.closeBtn = document.getElementById("save-error-toast-close");
+    this.closeBtn.addEventListener("click", ()=> this.hide());
+  },
+  show(message, retryFn){
+    this.msgEl.textContent = message;
+    this.retryBtn.onclick = async ()=>{
+      this.retryBtn.disabled = true;
+      await retryFn();
+      this.retryBtn.disabled = false;
+    };
+    this.el.classList.add("visible");
+  },
+  hide(){ this.el.classList.remove("visible"); }
+};
+saveErrorToast.init();
+
 /* ---------------- storage helpers ---------------- */
 const DEFAULTS = {
   dashboard: {
@@ -2324,8 +2376,9 @@ const store = {
       const { error } = await sb
         .from("planner_store")
         .upsert({ key, value, updated_at: new Date().toISOString() });
-      if(error) console.error("supabase set error", key, error);
-    }catch(e){ console.error("supabase set error", key, e); }
+      if(error){ console.error("supabase set error", key, error); this.notifyFailed(key, value, false); }
+      else saveErrorToast.hide();
+    }catch(e){ console.error("supabase set error", key, e); this.notifyFailed(key, value, false); }
   },
   // come set(), ma non occupa uno slot della cronologia "Undo": da usare per modifiche
   // frequenti e non distruttive (riordini, toggle, piccole preferenze) che altrimenti
@@ -2336,8 +2389,17 @@ const store = {
       const { error } = await sb
         .from("planner_store")
         .upsert({ key, value, updated_at: new Date().toISOString() });
-      if(error) console.error("supabase set error", key, error);
-    }catch(e){ console.error("supabase set error", key, e); }
+      if(error){ console.error("supabase set error", key, error); this.notifyFailed(key, value, true); }
+      else saveErrorToast.hide();
+    }catch(e){ console.error("supabase set error", key, e); this.notifyFailed(key, value, true); }
+  },
+  // Mostra l'avviso "salvataggio fallito" con un pulsante "Riprova" che rilancia lo stesso
+  // salvataggio. `value` è lo stesso riferimento passato a set/setQuiet: se nel frattempo
+  // l'utente ha continuato a modificarlo (es. state.dashboard), il "Riprova" invia comunque
+  // il contenuto più aggiornato, non uno scattato al momento dell'errore.
+  notifyFailed(key, value, quiet){
+    saveErrorToast.show("Non sono riuscito a salvare l'ultima modifica. Controlla la connessione.",
+      ()=> quiet ? this.setQuiet(key, value) : this.set(key, value));
   }
 };
 

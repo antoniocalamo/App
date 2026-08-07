@@ -4124,6 +4124,13 @@ function openViewSettingsModal(){
     gcalRow.appendChild(el("span",{class:"box-icon", html:ICON_GCAL}));
     gcalRow.appendChild(el("span",{}, "Mostra eventi Google"));
     modal.appendChild(gcalRow);
+    const completedRow = el("div",{class:"kpi-check-row"});
+    const completedCb = el("input",{type:"checkbox"});
+    completedCb.checked = state.dashboard.showCompleted !== false;
+    completedRow.appendChild(completedCb);
+    completedRow.appendChild(el("span",{class:"box-icon", html:ICON_CHECK}));
+    completedRow.appendChild(el("span",{}, "Mostra i task completati"));
+    modal.appendChild(completedRow);
     const actions = el("div",{class:"modal-actions"});
     const cancelBtn = el("button",{class:"btn ghost"},"Annulla");
     cancelBtn.addEventListener("click", close);
@@ -4134,6 +4141,7 @@ function openViewSettingsModal(){
       else state.dashboard.widgetsHiddenDesktop = hideCb.checked;
       state.dashboard.backlogCollapsed = backlogCb.checked;
       state.accountSettings.showGcalEvents = gcalCb.checked;
+      state.dashboard.showCompleted = completedCb.checked;
       store.set(privKey("dashboard"), state.dashboard);
       store.setQuiet(privKey("accountSettings"), state.accountSettings);
       close(); render("dashboard");
@@ -4321,29 +4329,6 @@ function renderDashboard(main){
     histToggle.addEventListener("click", ()=>{ historyExpanded = !historyExpanded; render("dashboard"); });
     todoActions.appendChild(histToggle);
   }
-  const toggleLabel = el("label",{class:"toggle-completed"});
-  const toggleInput = el("input",{type:"checkbox"});
-  toggleInput.checked = state.dashboard.showCompleted !== false;
-  toggleInput.addEventListener("change", ()=>{
-    state.dashboard.showCompleted = toggleInput.checked;
-    store.set(privKey("dashboard"), state.dashboard);
-    render("dashboard");
-  });
-  toggleLabel.appendChild(toggleInput);
-  toggleLabel.appendChild(document.createTextNode("Mostra i task completati"));
-  todoActions.appendChild(toggleLabel);
-  const clearBtn = el("button",{class:"btn danger small"},"Elimina completati");
-  clearBtn.addEventListener("click", async ()=>{
-    if(await confirmModal("Sei sicuro di voler eliminare definitivamente tutti i task completati della settimana visibile? L'azione non è reversibile.", {danger:true, okLabel:"Elimina"})){
-      visibleDates().forEach(dateStr=>{
-        if(state.dashboard.days[dateStr]){
-          state.dashboard.days[dateStr] = state.dashboard.days[dateStr].filter(t=>!t.done);
-        }
-      });
-      store.set(privKey("dashboard"), state.dashboard); render("dashboard");
-    }
-  });
-  todoActions.appendChild(clearBtn);
   const todoActionsWrap = el("div",{class:"todo-actions-wrap"},[scrollHintIcon(), todoActions]);
 
   const headerWrap = el("div",{class:"dash-header-sticky"});

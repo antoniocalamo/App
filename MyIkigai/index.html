@@ -4107,17 +4107,17 @@ function openViewSettingsModal(){
     const isMobileNow = window.matchMedia("(max-width:880px)").matches;
     const hideRow = el("div",{class:"kpi-check-row"});
     const hideCb = el("input",{type:"checkbox"});
-    hideCb.checked = isMobileNow ? !!state.dashboard.widgetsHiddenMobile : !!state.dashboard.widgetsHiddenDesktop;
+    hideCb.checked = isMobileNow ? !state.dashboard.widgetsHiddenMobile : !state.dashboard.widgetsHiddenDesktop;
     hideRow.appendChild(hideCb);
-    hideRow.appendChild(el("span",{class:"box-icon", html:ICON_EYE_OFF}));
-    hideRow.appendChild(el("span",{}, "Nascondi tutti i widget"));
+    hideRow.appendChild(el("span",{class:"box-icon", html:ICON_EYE}));
+    hideRow.appendChild(el("span",{}, "Mostra tutti i widget"));
     modal.appendChild(hideRow);
     const backlogRow = el("div",{class:"kpi-check-row"});
     const backlogCb = el("input",{type:"checkbox"});
-    backlogCb.checked = !!state.dashboard.backlogCollapsed;
+    backlogCb.checked = !state.dashboard.backlogCollapsed;
     backlogRow.appendChild(backlogCb);
-    backlogRow.appendChild(el("span",{class:"box-icon", html:ICON_EYE_OFF}));
-    backlogRow.appendChild(el("span",{}, "Nascondi il backlog"));
+    backlogRow.appendChild(el("span",{class:"box-icon", html:ICON_EYE}));
+    backlogRow.appendChild(el("span",{}, "Mostra il backlog"));
     modal.appendChild(backlogRow);
     const gcalRow = el("div",{class:"kpi-check-row"});
     const gcalCb = el("input",{type:"checkbox"});
@@ -4139,9 +4139,9 @@ function openViewSettingsModal(){
     const saveBtn = el("button",{class:"btn primary"},"Salva");
     saveBtn.addEventListener("click", ()=>{
       state.dashboard.kpiSelection = Object.keys(KPI_CATALOG).filter(key=>checks[key].checked);
-      if(isMobileNow) state.dashboard.widgetsHiddenMobile = hideCb.checked;
-      else state.dashboard.widgetsHiddenDesktop = hideCb.checked;
-      state.dashboard.backlogCollapsed = backlogCb.checked;
+      if(isMobileNow) state.dashboard.widgetsHiddenMobile = !hideCb.checked;
+      else state.dashboard.widgetsHiddenDesktop = !hideCb.checked;
+      state.dashboard.backlogCollapsed = !backlogCb.checked;
       state.accountSettings.showGcalEvents = gcalCb.checked;
       state.dashboard.showCompleted = completedCb.checked;
       store.set(privKey("dashboard"), state.dashboard);

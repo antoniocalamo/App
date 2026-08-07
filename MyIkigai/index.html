@@ -4097,12 +4097,23 @@ function openKpiSettingsModal(){
       row.appendChild(el("span",{}, KPI_CATALOG[key].label));
       modal.appendChild(row);
     });
+    modal.appendChild(el("div",{style:"font-size:12.5px;color:var(--ink-soft);margin:14px 0 4px;padding-top:10px;border-top:1px solid var(--line);"},"Visibilità:"));
+    const isMobileNow = window.matchMedia("(max-width:880px)").matches;
+    const hideRow = el("div",{class:"kpi-check-row"});
+    const hideCb = el("input",{type:"checkbox"});
+    hideCb.checked = isMobileNow ? !!state.dashboard.widgetsHiddenMobile : !!state.dashboard.widgetsHiddenDesktop;
+    hideRow.appendChild(hideCb);
+    hideRow.appendChild(el("span",{class:"box-icon", html:ICON_EYE_OFF}));
+    hideRow.appendChild(el("span",{}, "Nascondi tutti i widget"));
+    modal.appendChild(hideRow);
     const actions = el("div",{class:"modal-actions"});
     const cancelBtn = el("button",{class:"btn ghost"},"Annulla");
     cancelBtn.addEventListener("click", close);
     const saveBtn = el("button",{class:"btn primary"},"Salva");
     saveBtn.addEventListener("click", ()=>{
       state.dashboard.kpiSelection = Object.keys(KPI_CATALOG).filter(key=>checks[key].checked);
+      if(isMobileNow) state.dashboard.widgetsHiddenMobile = hideCb.checked;
+      else state.dashboard.widgetsHiddenDesktop = hideCb.checked;
       store.set(privKey("dashboard"), state.dashboard);
       close(); render("dashboard");
     });
@@ -4270,16 +4281,27 @@ function renderDashboard(main){
   todoActions.appendChild(kpiEditBtn);
   const isMobileNow = window.matchMedia("(max-width:880px)").matches;
   const widgetsHiddenNow = isMobileNow ? state.dashboard.widgetsHiddenMobile : state.dashboard.widgetsHiddenDesktop;
-  const widgetsToggleBtn = el("button",{class:"btn ghost small"}, widgetsHiddenNow ? "Mostra widget" : "Nascondi widget");
-  widgetsToggleBtn.addEventListener("click", ()=>{
-    if(isMobileNow) state.dashboard.widgetsHiddenMobile = !state.dashboard.widgetsHiddenMobile;
-    else state.dashboard.widgetsHiddenDesktop = !state.dashboard.widgetsHiddenDesktop;
-    store.set(privKey("dashboard"), state.dashboard);
-    render("dashboard");
-  });
-  todoActions.appendChild(widgetsToggleBtn);
+  const hasPendingPast = past.some(d => (state.dashboard.days[d]||[]).some(t=>!t.done));
+  const moveAllBtn = el("button",{class:"btn ghost small", title: hasPendingPast ? "Sposta a oggi tutti i task ancora aperti dei giorni passati" : "Nessun task aperto nello storico"}, "Sposta aperti a oggi");
+  if(hasPendingPast){
+    moveAllBtn.addEventListener("click", ()=>{
+      const today = visibleDates()[0];
+      if(!state.dashboard.days[today]) state.dashboard.days[today] = [];
+      past.slice().reverse().forEach(dateStr=>{
+        const arr = state.dashboard.days[dateStr];
+        const pending = arr.filter(t=>!t.done);
+        if(!pending.length) return;
+        state.dashboard.days[dateStr] = arr.filter(t=>t.done);
+        state.dashboard.days[today].push(...pending);
+      });
+      store.set(privKey("dashboard"), state.dashboard);
+      renderDashboard(clear(main));
+    });
+  } else {
+    moveAllBtn.disabled = true;
+  }
+  todoActions.appendChild(moveAllBtn);
   if(past.length){
-    const hasPendingPast = past.some(d => (state.dashboard.days[d]||[]).some(t=>!t.done));
     const histToggle = el("button",{class:"btn ghost small history-toggle"+(hasPendingPast?" has-pending":""),
       title: hasPendingPast ? "Ci sono task ancora aperti nei giorni passati" : ""});
     histToggle.appendChild(el("span",{class:"history-toggle-arrow"}, historyExpanded ? "▾" : "▸"));
@@ -9514,7 +9536,7 @@ function autoResize(ta){
 function render(tab){
   currentRenderedTab = tab;
   renderMobileNav();
-  // La barra di azioni scorrevole in orizzontale (Home: "Modifica widget", "Mostra widget",
+  // La barra di azioni scorrevole in orizzontale (Home: "Modifica widget", "Sposta aperti a oggi",
   // "Mostra eventi Google", ecc.) viene ricreata da zero a ogni render, quindi perderebbe
   // lo scroll orizzontale ogni volta che si clicca uno dei suoi pulsanti. La salviamo prima
   // di ridisegnare e la riapplichiamo al nuovo elemento subito dopo.

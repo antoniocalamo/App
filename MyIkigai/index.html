@@ -426,6 +426,9 @@ button{font-family:'Inter',sans-serif;}
 .btn.ghost{background:transparent; border:1px dashed var(--line);}
 .btn.danger{color:var(--rust); border-color:var(--rust); background:transparent;}
 .btn.small{padding:4px 9px; font-size:12px; border-radius:7px;}
+.btn.icon-text-btn{display:inline-flex; align-items:center; gap:5px;}
+.btn-icon{width:13px; height:13px; flex-shrink:0; display:flex;}
+.btn-icon svg{width:100%; height:100%; display:block;}
 
 .card{
   background:var(--card);
@@ -2097,6 +2100,7 @@ const ICON_EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
 const ICON_LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 const ICON_STAR_KPI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M12 3l2.6 5.9 6.4.6-4.8 4.3 1.4 6.3L12 17l-5.6 3.1 1.4-6.3-4.8-4.3 6.4-.6Z"/></svg>';
 const ICON_TARGET_KPI = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>';
+const ICON_FILTER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 5h16l-6.5 8.5V19l-3 1.5v-6.7L4 5Z"/></svg>';
 const KPI_CATALOG = {
   ortoWater: { label:"ultima innaffiata/pioggia orto", icon:ICON_DROP, color:"var(--teal)",
     compute: ()=> fmtDateShort(state.orto.lastWatered) },
@@ -4082,10 +4086,10 @@ function openAccountSettingsModal(){
     modal.appendChild(actions);
   });
 }
-function openKpiSettingsModal(){
+function openViewSettingsModal(){
   openModal((modal, close)=>{
-    modal.appendChild(el("h3",{},"Indicatori in dashboard"));
-    modal.appendChild(el("div",{style:"font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;"},"Scegli quali mostrare:"));
+    modal.appendChild(el("h3",{},"Impostazioni vista"));
+    modal.appendChild(el("div",{style:"font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;"},"Indicatori da mostrare:"));
     const checks = {};
     Object.keys(KPI_CATALOG).forEach(key=>{
       const row = el("div",{class:"kpi-check-row"});
@@ -4106,6 +4110,20 @@ function openKpiSettingsModal(){
     hideRow.appendChild(el("span",{class:"box-icon", html:ICON_EYE_OFF}));
     hideRow.appendChild(el("span",{}, "Nascondi tutti i widget"));
     modal.appendChild(hideRow);
+    const backlogRow = el("div",{class:"kpi-check-row"});
+    const backlogCb = el("input",{type:"checkbox"});
+    backlogCb.checked = !!state.dashboard.backlogCollapsed;
+    backlogRow.appendChild(backlogCb);
+    backlogRow.appendChild(el("span",{class:"box-icon", html:ICON_EYE_OFF}));
+    backlogRow.appendChild(el("span",{}, "Nascondi il backlog"));
+    modal.appendChild(backlogRow);
+    const gcalRow = el("div",{class:"kpi-check-row"});
+    const gcalCb = el("input",{type:"checkbox"});
+    gcalCb.checked = state.accountSettings.showGcalEvents !== false;
+    gcalRow.appendChild(gcalCb);
+    gcalRow.appendChild(el("span",{class:"box-icon", html:ICON_GCAL}));
+    gcalRow.appendChild(el("span",{}, "Mostra eventi Google"));
+    modal.appendChild(gcalRow);
     const actions = el("div",{class:"modal-actions"});
     const cancelBtn = el("button",{class:"btn ghost"},"Annulla");
     cancelBtn.addEventListener("click", close);
@@ -4114,7 +4132,10 @@ function openKpiSettingsModal(){
       state.dashboard.kpiSelection = Object.keys(KPI_CATALOG).filter(key=>checks[key].checked);
       if(isMobileNow) state.dashboard.widgetsHiddenMobile = hideCb.checked;
       else state.dashboard.widgetsHiddenDesktop = hideCb.checked;
+      state.dashboard.backlogCollapsed = backlogCb.checked;
+      state.accountSettings.showGcalEvents = gcalCb.checked;
       store.set(privKey("dashboard"), state.dashboard);
+      store.setQuiet(privKey("accountSettings"), state.accountSettings);
       close(); render("dashboard");
     });
     actions.appendChild(cancelBtn); actions.appendChild(saveBtn);
@@ -4257,28 +4278,14 @@ function buildGcalStatusButton(){
   btn.addEventListener("click", connectGoogleCalendar);
   return btn;
 }
-// Toggle "Mostra/nascondi eventi Google" nell'header della To Do List: al contrario del vecchio
-// bottone, non gestisce la connessione (spostata nel pannello impostazioni), solo la visibilità
-// dei chip già mostrati o meno nelle card giorno.
-function buildGcalVisibilityToggle(){
-  const label = el("label",{class:"toggle-completed"});
-  const input = el("input",{type:"checkbox"});
-  input.checked = state.accountSettings.showGcalEvents !== false;
-  input.addEventListener("change", ()=>{
-    state.accountSettings.showGcalEvents = input.checked;
-    store.setQuiet(privKey("accountSettings"), state.accountSettings);
-    render("dashboard");
-  });
-  label.appendChild(input);
-  label.appendChild(document.createTextNode("Mostra eventi Google"));
-  return label;
-}
 function renderDashboard(main){
   const past = pastDates().filter(d => state.dashboard.days[d] && state.dashboard.days[d].length);
   const todoActions = el("div",{class:"todo-header-actions"});
-  const kpiEditBtn = el("button",{class:"btn ghost small"},"Modifica widget");
-  kpiEditBtn.addEventListener("click", openKpiSettingsModal);
-  todoActions.appendChild(kpiEditBtn);
+  const viewSettingsBtn = el("button",{class:"btn ghost small icon-text-btn", title:"Impostazioni vista: indicatori, widget, backlog, eventi Google"},[
+    el("span",{class:"btn-icon", html:ICON_FILTER}), "Vista"
+  ]);
+  viewSettingsBtn.addEventListener("click", openViewSettingsModal);
+  todoActions.appendChild(viewSettingsBtn);
   const isMobileNow = window.matchMedia("(max-width:880px)").matches;
   const widgetsHiddenNow = isMobileNow ? state.dashboard.widgetsHiddenMobile : state.dashboard.widgetsHiddenDesktop;
   const hasPendingPast = past.some(d => (state.dashboard.days[d]||[]).some(t=>!t.done));
@@ -4337,14 +4344,6 @@ function renderDashboard(main){
     }
   });
   todoActions.appendChild(clearBtn);
-  const backlogToggleBtn = el("button",{class:"btn ghost small"}, state.dashboard.backlogCollapsed ? "Mostra backlog" : "Nascondi backlog");
-  backlogToggleBtn.addEventListener("click", ()=>{
-    state.dashboard.backlogCollapsed = !state.dashboard.backlogCollapsed;
-    store.setQuiet(privKey("dashboard"), state.dashboard);
-    render("dashboard");
-  });
-  todoActions.appendChild(backlogToggleBtn);
-  todoActions.appendChild(buildGcalVisibilityToggle());
   const todoActionsWrap = el("div",{class:"todo-actions-wrap"},[scrollHintIcon(), todoActions]);
 
   const headerWrap = el("div",{class:"dash-header-sticky"});
